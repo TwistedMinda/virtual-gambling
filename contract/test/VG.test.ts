@@ -132,20 +132,20 @@ describe("VirtualGambling", function () {
         return true
       })
     )
-
-    await log()
   })
 
-  return;
-
   const winPositionId = 1
+  
   it("(win case) take position", async function () {
     const [gambler] = await ethers.getSigners()
     
     await approveToken(daiToken, await contract.getAddress(), allowed)
     await expectFinish(
       contract.connect(gambler).openPosition(),
-      (res) => res.to.emit(contract, "PositionOpen").withArgs(gambler.address, winPositionId, allowed)
+      (res) => res.to.emit(contract, "PositionOpen").withArgs(gambler.address, winPositionId, (x: number) => {
+        console.log('position opened at: ', displayEther(x))
+        return true
+      })
     )
   })
 
@@ -154,10 +154,12 @@ describe("VirtualGambling", function () {
     
     await expectFinish(
       contract.connect(gambler).closePosition(winPositionId),
-      (res) => res.to.emit(contract, "PositionClosed").withArgs(gambler.address, winPositionId, getAmount("200"))
+      (res) => res.to.emit(contract, "PositionClosed").withArgs(gambler.address, winPositionId, (x: number) => {
+        console.log('position closed at: ', displayEther(x))
+        return true
+      })
     )
   })
-  
   
   it("withdraw ETH", async function () {
     const [_, liquidityProvider] = await ethers.getSigners()

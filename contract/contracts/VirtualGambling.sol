@@ -168,15 +168,17 @@ contract VirtualGambling {
   // Sell locked ETH
   function _sellLockedETH(uint positionId) private returns (uint) {
     // TODO: Sell locked ether using Uniswap to USDC
-    uint value = 100 ether;
+    uint value = 1 ether;
     return value;
    }
 
   // Share USDC profits
   function _shareProfits(uint positionId, uint sellValue) private {
+    // Provider gets its profits
     uint providerFee = sellValue * (WINNER_FEE_PERCENTAGE / 100);
-    daiToken.transfer(positions[positionId].owner, positions[positionId].amount + sellValue - providerFee);
     daiToken.transfer(positions[positionId].provider, providerFee);
+    // Gambler gets the initially deposited amount + profits (- provider fee)
+    daiToken.transfer(positions[positionId].owner, positions[positionId].amount + sellValue - providerFee);
  }
 
   // Send USDC fee to provider
