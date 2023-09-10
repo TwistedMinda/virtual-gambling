@@ -41,6 +41,7 @@ export default function GamePage() {
 		<div className="game-wrapper">
 			<div className="main-box">
 				<div className="col center">
+					<Deposit />
 					<Gamble />
 				</div>
 
