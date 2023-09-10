@@ -18,13 +18,14 @@ contract VirtualGambling {
   uint constant MAX_POSITION_DURATION = 7 days;
   uint constant LOSER_FEE_PERCENTAGE = 1;
   uint constant WINNER_FEE_PERCENTAGE = 50;
-  uint constant MINIMUM_CHUNK_SIZE = 0.001 ether;
+  uint constant CHUNK_SIZE = 0.001 ether;
 
   /**
    * Errors 
    */
   error InsufficientDeposit(uint required, uint provided);
-  error InsufficientLiquidity(uint current, uint required);
+  error DepositNotChunkCompatible(uint chunk_size, uint provided);
+  error NotEnoughProviders(uint current, uint required);
   error PositionAlreadyClosed(uint positionId);
   error PositionNotYetOutdated(uint positionId);
   error NotEnoughWithdrawableLiquidity(uint available, uint required);
@@ -58,19 +59,23 @@ contract VirtualGambling {
   WETHERC20 public daiToken = WETHERC20(DAI);
   
   uint id = 0;
-  uint availableBalance = 0;
   mapping (uint => Position) public positions;
   mapping (address => uint) public liquidityProviders;
 
-  uint[] chunks;
+  address[] chunks;
 
   /**
    * Liquidity provider methods
    */
 
   // Provide liquidity for the gamblers
-  function depositLiquidity() payable public _minimumLiquidityDeposit(msg.value) {
-    availableBalance += msg.value;
+  function depositLiquidity() payable public
+    _isChunkCompatible(msg.value) {
+    // Add available chunks
+    uint count = msg.value / CHUNK_SIZE;
+    for (uint i = 0; i < count; i++) {
+      chunks.push(msg.sender);
+    }
     liquidityProviders[msg.sender] += msg.value;
     emit DepositedLiquidity(msg.sender, msg.value);
   }
@@ -89,13 +94,11 @@ contract VirtualGambling {
    */
 
   // Open a position
-  function openPosition(uint amount) public _minimumGamblingDeposit(amount) {
-    uint lockEther = (amount / (_getEtherPrice(true, false) * 1 ether) * 1 ether);
-    if (lockEther < availableBalance) {
-      revert InsufficientLiquidity(availableBalance, lockEther);
-    }
+  function openPosition(uint _unused) public { // _minimumGamblingDeposit(chunks)
     address provider = _findAvailableProvider();
+    uint lockEther = 1 * CHUNK_SIZE;
     _lockProviderEther(provider, lockEther);
+    uint amount = lockEther * _getEtherPrice(true, false);
     daiToken.transferFrom(msg.sender, address(this), amount);
     positions[id] = Position({
       id: id,
@@ -142,28 +145,26 @@ contract VirtualGambling {
 
   // Find available provider
   function _findAvailableProvider() view private returns (address) {
-    for (uint i = 0; i < chunks.length; i++) {
-      
+    if (chunks.length == 0) {
+      revert NotEnoughProviders(2, 2);
     }
-    return msg.sender;
+    return chunks[0];
   }
 
   // Lock provider's ethers when opening the position
   function _lockProviderEther(address provider, uint amount) private {
-    availableBalance -= amount;
-    //liquidityProviders[provider] -= amount;
+    liquidityProviders[provider] -= amount;
   }
 
   // Unlock provider's ethers when closing the position
   function _unlockProviderEther(address provider, uint amount) private {
-    availableBalance += amount;
     liquidityProviders[provider] += amount;
   }
 
   // Calculate off-chain price
   function _getEtherPrice(bool start, bool win) pure private returns (uint) {
     // TODO: Calculate price using Chainlink
-    return start ? 100 : win ? 200 : 50;
+    return start ? 1000 : win ? 2000 : 500;
   }
 
   // Sell locked ETH
@@ -198,12 +199,13 @@ contract VirtualGambling {
     _;
   }
 
-  modifier _minimumLiquidityDeposit(uint amount) {
-    if (amount < MINIMUM_LIQUIDITY_ENTRY) {
-      revert InsufficientDeposit(MINIMUM_LIQUIDITY_ENTRY, amount);
+  modifier _isChunkCompatible(uint amount) {
+    if (amount % CHUNK_SIZE != 0) {
+      revert DepositNotChunkCompatible(CHUNK_SIZE, amount);
     }
     _;
   }
+
 
   modifier _requireOpenPosition(uint positionId) {
     if (!positions[positionId].open) {

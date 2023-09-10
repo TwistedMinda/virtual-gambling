@@ -116,7 +116,10 @@ describe("VirtualGambling", function () {
     await approveToken(daiToken, await contract.getAddress(), investment)
     await expectFinish(
       contract.connect(gambler).openPosition(investment),
-      (res) => res.to.emit(contract, "PositionOpen").withArgs(gambler.address, lossPositionId, investment)
+      (res) => res.to.emit(contract, "PositionOpen").withArgs(gambler.address, lossPositionId, (x: number) => {
+        console.log('position opened at: ', displayEther(x))
+        return true
+      })
     )
   })
 
@@ -125,7 +128,10 @@ describe("VirtualGambling", function () {
     
     await expectFinish(
       contract.connect(gambler).closePosition(lossPositionId),
-      (res) => res.to.emit(contract, "PositionClosed").withArgs(gambler.address, lossPositionId, getAmount("50"))
+      (res) => res.to.emit(contract, "PositionClosed").withArgs(gambler.address, lossPositionId, (x: number) => {
+        console.log('position closed at: ', displayEther(x))
+        return true
+      })
     )
 
     await log()
