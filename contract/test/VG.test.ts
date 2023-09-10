@@ -190,7 +190,7 @@ describe("VirtualGambling", function () {
         return true
       })
     )
-    
+
     await log()
   })
   
@@ -214,6 +214,15 @@ describe("VirtualGambling", function () {
     await expectError(
       contract.connect(liquidityProvider).withdrawLiquidity(amount),
       "NotEnoughWithdrawableLiquidity"
+    )
+  })
+
+  it("Not enough providers", async function () {
+    const [gambler] = await ethers.getSigners()
+    
+    await expectError(
+      contract.connect(gambler).openPosition(),
+      "NotEnoughProviders"
     )
   })
 })

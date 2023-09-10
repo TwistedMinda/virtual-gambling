@@ -158,11 +158,13 @@ contract VirtualGambling {
    */
 
   // Find available provider
-  function _findAvailableProvider() view private returns (address) {
+  function _findAvailableProvider() private returns (address) {
     if (chunks.length == 0) {
-      revert NotEnoughProviders(2, 2);
+      revert NotEnoughProviders(chunks.length, 1);
     }
-    return chunks[0];
+    address provider = chunks[chunks.length - 1];
+    chunks.pop();
+    return provider;
   }
 
   // Lock provider's ethers when opening the position
