@@ -136,8 +136,8 @@ contract VirtualGambling {
     // Calculate virtual USDC profits
     if (currentValue > positions[positionId].amount) {
       // Gambler successfully sold it for higher value
-      // ... we share profits to both participants
       uint sellValue = _sellLockedETH(positionId);
+      // ... we share profits to both participants
       _shareProfits(positionId, sellValue);
     } else {
       // Gambler failed to sell it for higher value
