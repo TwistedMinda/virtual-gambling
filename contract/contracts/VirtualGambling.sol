@@ -180,8 +180,6 @@ contract VirtualGambling {
   // Calculate off-chain price
   function _getEtherPrice(bool start, bool win) private returns (uint) {
     uint price = swapper.getEtherPrice();
-    console.log('start', start);
-    console.log('win', win);
     if (start) {
       return price;
     }
