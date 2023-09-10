@@ -4,7 +4,7 @@ import { config } from "./config";
 const hre = require("hardhat");
 
 async function main() {
-  const cfg = config[hre.network.name] ?? config.sepolia
+  const cfg = config[hre.network.name] ?? config.localhost
 
   const swapper = await deploySwapperContract(cfg)
   const swapperAddress = await swapper.getAddress()

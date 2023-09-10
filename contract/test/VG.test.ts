@@ -16,7 +16,8 @@ const { network } = require('hardhat');
 let swapperContract: Swapper
 let contract: VirtualGambling
 
-const cfg = config[network.name] ?? config.sepolia
+console.log(network.name)
+const cfg = config[network.name] ?? config.localhost
 
 const daiToken = cfg.DAI
 const wethToken = cfg.WETH
@@ -92,7 +93,7 @@ describe("VirtualGambling", function () {
    */
 
   it("deploy contract", async function () {
-    const cfg = config[network.name] ?? config.sepolia
+    const cfg = config[network.name] ?? config.localhost
 
     swapperContract = await deploySwapperContract(cfg)
     contract = await deployContract(await swapperContract.getAddress())
