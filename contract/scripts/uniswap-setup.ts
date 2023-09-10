@@ -44,8 +44,21 @@ const setupPool = async (
   const pool = await factory.createPool(token1Addr, token2Addr, 3000)
   const createPoolTx = await pool.wait(1);
   const poolAddress = createPoolTx.logs[0].args[4]
-  const Pool = await ethers.getContractAt(POOL_ABI, poolAddress)
-  
+  const poolContract = await ethers.getContractAt(POOL_ABI, poolAddress)
+
+  /**
+   * Pool info
+   */
+  // const res = await Promise.all([
+  //   poolContract.token0(),
+  //   poolContract.token1(),
+  //   poolContract.fee(),
+  //   poolContract.tickSpacing(),
+  //   poolContract.liquidity(),
+  //   poolContract.slot0(),
+  // ])
+  // console.log(res)
+
   // Wrap some ETH
   await token2.deposit({ value: getAmount("1") })
 
@@ -57,7 +70,7 @@ const setupPool = async (
   await token2.approve(await router.getAddress(), ethToApprove);
 
   // Add liquidity to the pool
-  const addLiquidityTx = await Pool.mint(
+  const addLiquidityTx = await poolContract.mint(
     poolAddress,
     [token1Addr, token2Addr], // Token addresses
     [getAmount("1"), getAmount("1")], // Amounts to add
