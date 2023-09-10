@@ -62,15 +62,6 @@ describe("VirtualGambling", function () {
   })
 
   it("deposit ETH", async function () {
-    const [owner] = await ethers.getSigners()
-    
-    await expectFinish(
-      contract.connect(owner).takePosition(200000),
-      (res) => res.to.emit(contract, "PositionTaken")
-    )
-  })
-
-  it("gamble", async function () {
     const [_, user2] = await ethers.getSigners()
     const contractAddr = await contract.getAddress()   
 
@@ -84,4 +75,21 @@ describe("VirtualGambling", function () {
     }
   })
 
+  it("take position", async function () {
+    const [owner] = await ethers.getSigners()
+    
+    await expectFinish(
+      contract.connect(owner).takePosition(200000),
+      (res) => res.to.emit(contract, "PositionOpen")
+    )
+  })
+
+  it("quit position", async function () {
+    const [owner] = await ethers.getSigners()
+    
+    await expectFinish(
+      contract.connect(owner).quitPosition(200000),
+      (res) => res.to.emit(contract, "PositionClosed")
+    )
+  })
 })

@@ -5,9 +5,11 @@ import "hardhat/console.sol";
 
 contract VirtualGambling {
   uint256 constant MINIMUM_ENTRY = 0.001 ether;
+  uint256 id = 0;
 
   event Deposited(address, uint amount);
-  event PositionTaken(address, uint amount);
+  event PositionOpen(address, uint positionId, uint amount);
+  event PositionClosed(address, uint positionId, uint amount);
 
   error InsufficientEntry(uint256 required, uint256 provided);
   
@@ -24,7 +26,11 @@ contract VirtualGambling {
   }
 
   function takePosition(uint amount) public {
-    emit PositionTaken(msg.sender, amount);
+    emit PositionOpen(msg.sender, ++id, amount);
+  }
+
+  function quitPosition(uint positionId) public {
+    emit PositionClosed(msg.sender, positionId, 2000);
   }
 
   modifier _requireMinimumEntry(uint amount) {
