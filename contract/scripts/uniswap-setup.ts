@@ -1,6 +1,11 @@
 import { ethers } from "hardhat"
 
 import {
+  abi as WETH9_ABI,
+  bytecode as WETH9_BYTECODE,
+} from '@uniswap/v3-periphery/artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
+
+import {
   abi as FACTORY_ABI,
   bytecode as FACTORY_BYTECODE,
 } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json'
@@ -15,11 +20,25 @@ import {
   bytecode as QUOTER_BYTECODE,
 } from '@uniswap/v3-periphery/artifacts/contracts/lens/QuoterV2.sol/QuoterV2.json'
 
-const createPool = async (factory: any, token1: string, token2: string) => {
+const getAmount = (amount: string) => ethers.parseUnits(amount, 18)
+
+const createPool = async (factory: any, router: any, token1: string, token2: string) => {
+  const [owner] = await ethers.getSigners()
   const pool = await factory.createPool(token1, token2, 3000)
-  const tx = await pool.wait(1);
-  const poolAddress = tx.logs[0].args[4]
-  console.log('yay', poolAddress)
+  const createPoolTx = await pool.wait(1);
+  const poolAddress = createPoolTx.logs[0].args[4]
+
+  console.log('poolAddr', poolAddress)
+  
+  const addLiquidityTx = await router.addLiquidity(
+    poolAddress,
+    [token1, token2], // Token addresses
+    [getAmount("10"), getAmount("10")], // Amounts to add
+    [getAmount("9"), getAmount("9")], // Minimum amounts to add
+    owner.address, // recipient
+    Math.floor(Date.now() / 1000) + 60 * 20 // Deadline
+  );
+  await addLiquidityTx.wait();
 }
 
 export const getUniswapSetup = async (wethAddress: string) => {
@@ -28,7 +47,6 @@ export const getUniswapSetup = async (wethAddress: string) => {
   const factoryAddr = await factory.getAddress()
   console.log('🚀 Deployed "UniswapFactory": ', factoryAddr)
 
-  console.log('weth', wethAddress)
   const SwapRouter = await ethers.getContractFactory(SWAP_ROUTER_ABI, SWAP_ROUTER_BYTECODE)
   const swapRouter = await SwapRouter.deploy(factoryAddr, wethAddress)
   const swapRouterAddr = await swapRouter.getAddress()
@@ -44,7 +62,15 @@ export const getUniswapSetup = async (wethAddress: string) => {
   const daiTokenAddr = await daiToken.getAddress()
   console.log('🚀 Deployed "MockDAI": ', daiTokenAddr)
 
-  await createPool(factory, daiTokenAddr, wethAddress)
+  const wethToken = await ethers.getContractAt(WETH9_ABI, wethAddress)
+
+  const daiToApprove = getAmount("1000");
+  await daiToken.approve(swapRouterAddr, daiToApprove);
+  
+  const ethToApprove = getAmount("0.01");
+  await wethToken.approve(swapRouterAddr, ethToApprove);
+
+  await createPool(factory, swapRouter, daiTokenAddr, wethAddress)
 
   // 4: Add liquidity to the pool
   // add liquidity to the pool that I just created above
