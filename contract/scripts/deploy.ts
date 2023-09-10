@@ -1,7 +1,12 @@
 import { deployContract, deploySwapperContract, verifyContract } from "../artifacts/contracts/src/tools";
+import { config } from "./config";
+
+const hre = require("hardhat");
 
 async function main() {
-  const swapper = await deploySwapperContract()
+  const cfg = config[hre.network.name] ?? config.sepolia
+
+  const swapper = await deploySwapperContract(cfg)
   const swapperAddress = await swapper.getAddress()
   await deployContract(swapperAddress)
 }

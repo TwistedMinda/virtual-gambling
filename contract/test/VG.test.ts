@@ -9,16 +9,17 @@ import { ethers } from "hardhat";
 import ERC20ABI from './erc20.abi.json'
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { ContractRunner, ContractTransactionReceipt, ContractTransactionResponse, TransactionReceipt } from "ethers";
-import { tokens } from "../scripts/tokens";
+import { config } from "../scripts/config";
 
 const { network } = require('hardhat');
-
 
 let swapperContract: Swapper
 let contract: VirtualGambling
 
-const daiToken = tokens.sepolia.DAI
-const wethToken = tokens.sepolia.WETH
+const cfg = config[network.name] ?? config.sepolia
+
+const daiToken = cfg.DAI
+const wethToken = cfg.WETH
 
 const getTokenContract = (tokenAddress: string, runner: ContractRunner = ethers.provider) =>
   new ethers.Contract(tokenAddress, ERC20ABI, runner);
@@ -91,7 +92,9 @@ describe("VirtualGambling", function () {
    */
 
   it("deploy contract", async function () {
-    swapperContract = await deploySwapperContract()
+    const cfg = config[network.name] ?? config.sepolia
+
+    swapperContract = await deploySwapperContract(cfg)
     contract = await deployContract(await swapperContract.getAddress())
   })
 
