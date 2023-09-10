@@ -13,12 +13,10 @@ contract VirtualGambling {
   /**
    * Constants 
    */
-  uint constant MINIMUM_LIQUIDITY_ENTRY = 0.001 ether;
-  uint constant MINIMUM_GAMBLING_ENTRY = 0.001 ether;
   uint constant MAX_POSITION_DURATION = 7 days;
   uint constant LOSER_FEE_PERCENTAGE = 1;
   uint constant WINNER_FEE_PERCENTAGE = 50;
-  uint constant CHUNK_SIZE = 0.001 ether;
+  uint constant CHUNK_SIZE = 1 ether;
 
   /**
    * Errors 
@@ -94,7 +92,7 @@ contract VirtualGambling {
    */
 
   // Open a position
-  function openPosition(uint _unused) public { // _minimumGamblingDeposit(chunks)
+  function openPosition() public { // _minimumGamblingDeposit(chunks)
     address provider = _findAvailableProvider();
     uint lockEther = 1 * CHUNK_SIZE;
     _lockProviderEther(provider, lockEther);
@@ -183,7 +181,7 @@ contract VirtualGambling {
 
   // Send USDC fee to provider
   function _sendFeeToProvider(uint positionId) private {
-    uint fee = positions[positionId].amount * (LOSER_FEE_PERCENTAGE / 100);
+    uint fee = positions[positionId].amount * LOSER_FEE_PERCENTAGE / 100;
     daiToken.transfer(positions[positionId].provider, fee);
     daiToken.transfer(positions[positionId].owner, positions[positionId].amount - fee);
   }
@@ -191,13 +189,6 @@ contract VirtualGambling {
   /**
    * Modifiers
    */
-
-  modifier _minimumGamblingDeposit(uint amount) {
-    if (amount < MINIMUM_GAMBLING_ENTRY) {
-      revert InsufficientDeposit(MINIMUM_GAMBLING_ENTRY, amount);
-    }
-    _;
-  }
 
   modifier _isChunkCompatible(uint amount) {
     if (amount % CHUNK_SIZE != 0) {
