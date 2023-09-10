@@ -17,7 +17,7 @@ const config: HardhatUserConfig = {
       chainId: 5,
       accounts: [process.env.PRIVATE_KEY ?? '', process.env.PRIVATE_KEY_2 ?? ''],
       gasPrice: 3000000000,
-    },
+    }
   },
   etherscan: {
     apiKey: {
