@@ -16,6 +16,11 @@ import {
 } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json'
 
 import {
+  abi as POSITION_MANAGER_ABI,
+  bytecode as POSITION_MANAGER_BYTECODE,
+} from '@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json'
+
+import {
   abi as SWAP_ROUTER_ABI,
   bytecode as SWAP_ROUTER_BYTECODE,
 } from '@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json'
@@ -45,6 +50,12 @@ const setupPool = async (
   const createPoolTx = await pool.wait(1);
   const poolAddress = createPoolTx.logs[0].args[4]
   const poolContract = await ethers.getContractAt(POOL_ABI, poolAddress)
+
+  const PositionManager = await ethers.getContractFactory(POSITION_MANAGER_ABI, POSITION_MANAGER_BYTECODE)
+  const positionManager = await PositionManager.deploy()
+  const positionManagerAddr = await positionManager.getAddress()
+
+  console.log('Position manager', positionManagerAddr)
 
   /**
    * Pool info
