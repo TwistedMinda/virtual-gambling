@@ -24,6 +24,7 @@ contract Swapper {
   address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
   uint24 public constant feeTier = 3000;
 
+  IERC20 public daiToken = IERC20(DAI);
   WETHERC20 public wethToken = WETHERC20(WETH);
 
   constructor(ISwapRouter _swapRouter, IQuoterV2 _quoter) {
@@ -31,6 +32,24 @@ contract Swapper {
     quoter = _quoter;
   }
   
+  /**
+   * DAI Address
+   */
+  function getDAIAddress() public pure returns (address) {
+    return DAI;
+  }
+
+  function getDAIToken() public view returns (IERC20) {
+    return daiToken;
+  }
+
+  /**
+   * WETH Address
+   */
+  function getWETHAddress() public pure returns (address) {
+    return WETH;
+  }
+
   /**
    * Buying
    */

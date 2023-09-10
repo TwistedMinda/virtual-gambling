@@ -3,12 +3,6 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 import "./Swapper.sol";
-//import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-// interface WETHERC20 is IERC20 {
-//   function deposit() external payable;
-//   function withdraw(uint256 amount) external;
-// }
 
 contract VirtualGambling {
   /**
@@ -61,10 +55,6 @@ contract VirtualGambling {
   /**
    * Storage 
    */
-  address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-  address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-  WETHERC20 public daiToken = WETHERC20(DAI);
-  
   uint totalAvailableChunks = 0;
   uint id = 0;
   mapping (uint => Position) public positions;
@@ -113,7 +103,7 @@ contract VirtualGambling {
     address provider = _findAvailableProvider();
     _decrementChunks(provider, NB_CHUNKS);
     uint amount = NB_CHUNKS * _getEtherPrice(true, false);
-    daiToken.transferFrom(msg.sender, address(this), amount);
+    swapper.getDAIToken().transferFrom(msg.sender, address(this), amount);
     userPositions[msg.sender].push(id);
     positions[id] = Position({
       id: id,
@@ -228,26 +218,26 @@ contract VirtualGambling {
   function _sellLockedETH(uint positionId) private returns (uint) {
     uint amount = positions[positionId].lockedEther;
     swapper.wrapEther{value: amount}();
-    TransferHelper.safeApprove(WETH, address(swapper), amount);
-    return swapper.swapEtherToDAI(DAI, positions[positionId].lockedEther);
+    TransferHelper.safeApprove(swapper.getWETHAddress(), address(swapper), amount);
+    return swapper.swapEtherToDAI(swapper.getDAIAddress(), positions[positionId].lockedEther);
    }
 
   // Share USDC profits
   function _shareProfits(uint positionId, uint sellValue) private {
     // Provider gets its profits
     uint providerFee = sellValue * (WINNER_FEE_PERCENTAGE / 100);
-    daiToken.transfer(positions[positionId].provider, providerFee);
+    swapper.getDAIToken().transfer(positions[positionId].provider, providerFee);
     // Gambler gets the initially deposited amount + profits (- provider fee)
-    daiToken.transfer(positions[positionId].owner, positions[positionId].amount + sellValue - providerFee);
+    swapper.getDAIToken().transfer(positions[positionId].owner, positions[positionId].amount + sellValue - providerFee);
  }
 
   // Send USDC fee to provider
   function _sendFeeToProvider(uint positionId) private {
     // Provider get its profits
     uint fee = positions[positionId].amount * LOSER_FEE_PERCENTAGE / 100;
-    daiToken.transfer(positions[positionId].provider, fee);
+    swapper.getDAIToken().transfer(positions[positionId].provider, fee);
     // Gambler gets the initially deposited amount (- fee)
-    daiToken.transfer(positions[positionId].owner, positions[positionId].amount - fee);
+    swapper.getDAIToken().transfer(positions[positionId].owner, positions[positionId].amount - fee);
   }
 
   /**
