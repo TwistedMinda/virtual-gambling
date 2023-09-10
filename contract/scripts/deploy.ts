@@ -1,7 +1,8 @@
-import { deployContract, verifyContract } from "../artifacts/contracts/src/tools";
+import { deployContract, deploySwapperContract, verifyContract } from "../artifacts/contracts/src/tools";
 
 async function main() {
-  const contract = await deployContract()
+  const swapper = await deploySwapperContract()
+  const contract = await deployContract(await swapper.getAddress())
   const address = await contract.getAddress()
   await verifyContract(address, [])
 }
