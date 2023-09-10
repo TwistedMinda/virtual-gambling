@@ -6,6 +6,11 @@ import {
 } from '@uniswap/v3-periphery/artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
 
 import {
+  abi as POOL_ABI,
+  bytecode as POOL_BYTECODE,
+} from '@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json'
+
+import {
   abi as FACTORY_ABI,
   bytecode as FACTORY_BYTECODE,
 } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json'
@@ -29,8 +34,10 @@ const createPool = async (factory: any, router: any, token1: string, token2: str
   const poolAddress = createPoolTx.logs[0].args[4]
 
   console.log('poolAddr', poolAddress)
+  const Pool = await ethers.getContractAt(POOL_ABI, poolAddress)
+  console.log('yay', await Pool.getAddress())
   
-  const addLiquidityTx = await router.addLiquidity(
+  const addLiquidityTx = await Pool.mint(
     poolAddress,
     [token1, token2], // Token addresses
     [getAmount("10"), getAmount("10")], // Amounts to add
