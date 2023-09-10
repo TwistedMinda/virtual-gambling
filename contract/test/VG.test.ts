@@ -112,13 +112,13 @@ describe("VirtualGambling", function () {
       contract.connect(liquidityProvider).depositLiquidity({ value: depositAmount }),
       (res) => res.to.emit(contract, "DepositedLiquidity").withArgs(liquidityProvider.address, depositAmount)
     )
-    const withdrawAmount = getAmount("0.1")
-    const action = contract.connect(liquidityProvider).withdrawLiquidity(withdrawAmount)
+    const chunksToWithdraw = 1
+    const action = contract.connect(liquidityProvider).withdrawLiquidity(chunksToWithdraw)
     if (network.name === "localhost") {
-      await expectBalanceChange(liquidityProvider.address, action, withdrawAmount)
+      await expectBalanceChange(liquidityProvider.address, action, getAmount("0.1"))
     } else {
       await expectFinish(action, res =>
-        res.to.emit(contract, "WithdrawnLiquidity").withArgs(liquidityProvider.address, withdrawAmount)
+        res.to.emit(contract, "WithdrawnLiquidity").withArgs(liquidityProvider.address, chunksToWithdraw)
       )
     }
   })
@@ -186,9 +186,8 @@ describe("VirtualGambling", function () {
   it("can't withdraw twice", async function () {
     const [_, liquidityProvider] = await ethers.getSigners()
     
-    const amount = getAmount("1")
     await expectError(
-      contract.connect(liquidityProvider).withdrawLiquidity(amount),
+      contract.connect(liquidityProvider).withdrawLiquidity(1),
       "NotEnoughWithdrawableLiquidity"
     )
   })

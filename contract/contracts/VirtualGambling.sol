@@ -51,6 +51,12 @@ contract VirtualGambling {
     uint date;
     bool open;
   }
+
+  struct AvailableProvider {
+    uint index;
+    uint chunks;
+    address addr;
+  }
   
   /**
    * Storage 
@@ -59,13 +65,14 @@ contract VirtualGambling {
   address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
   WETHERC20 public daiToken = WETHERC20(DAI);
   
+  uint totalAvailableChunks = 0;
   uint id = 0;
   mapping (uint => Position) public positions;
   mapping (address => uint[]) public userPositions;
-  mapping (address => uint) public liquidityProviders;
 
-  address[] chunks;
   Swapper swapper;
+  address[] availableProviders;
+  mapping (address => AvailableProvider) userAvailableProvider;
 
   constructor(address swapperAddress) {
     swapper = Swapper(swapperAddress);
@@ -75,25 +82,56 @@ contract VirtualGambling {
    * Liquidity provider methods
    */
 
+  // Add available chunks
+  function _incrementChunks(address provider, uint chunks) private {
+    uint current = userAvailableProvider[provider].chunks;
+    if (current == 0) {
+      availableProviders.push(provider);
+      // Save index of the new provider
+      userAvailableProvider[provider].index = availableProviders.length - 1;
+    }
+    // Increment chunks
+    userAvailableProvider[provider].chunks += chunks;
+    totalAvailableChunks += chunks;
+  }
+  
+
+  // Remove available chunks
+  function _decrementChunks(address provider, uint chunks) private {
+    uint current = userAvailableProvider[provider].chunks;
+    if (current == 1) {
+      // No more available chunks, remove from list
+      removeProviderAtIndex(userAvailableProvider[provider].index);
+    }
+    // Decrement available chunks
+    userAvailableProvider[provider].chunks -= chunks;
+    totalAvailableChunks -= chunks;
+  }
+
+  // Remove provider from available providers
+  function removeProviderAtIndex(uint index) private {
+    availableProviders[index] = availableProviders[availableProviders.length - 1];
+    userAvailableProvider[availableProviders[index]].index = index;
+    availableProviders.pop();
+  }
+
   // Provide liquidity for the gamblers
   function depositLiquidity() payable public
     _isChunkCompatible(msg.value) {
     // Add available chunks
     uint count = msg.value / CHUNK_SIZE;
-    for (uint i = 0; i < count; i++) {
-      chunks.push(msg.sender);
-    }
-    liquidityProviders[msg.sender] += msg.value;
+    _incrementChunks(msg.sender, count);
     emit DepositedLiquidity(msg.sender, msg.value);
   }
 
   // Retrieve liquidity from the contract
-  function withdrawLiquidity(uint amount) public {
-    uint liquidity = liquidityProviders[msg.sender];
-    if (liquidity < amount) {
-      revert NotEnoughWithdrawableLiquidity(liquidity, amount);
+  function withdrawLiquidity(uint nbChunks) public {
+    uint availableChunks = userAvailableProvider[msg.sender].chunks;
+    if (availableChunks < nbChunks) {
+      revert NotEnoughWithdrawableLiquidity(availableChunks, nbChunks);
     }
-    liquidityProviders[msg.sender] -= amount;
+    _decrementChunks(msg.sender, nbChunks);
+    uint amount = nbChunks * CHUNK_SIZE;
     payable(msg.sender).transfer(amount);
     emit WithdrawnLiquidity(msg.sender, amount);
   }
@@ -101,12 +139,12 @@ contract VirtualGambling {
   /**
    * Virtual Gambler methods
    */
-
+  
   // Open a position
-  function openPosition() public { // _minimumGamblingDeposit(chunks)
+  function openPosition() public {
     uint NB_CHUNKS = 1;
     address provider = _findAvailableProvider();
-    _lockProviderEther(provider, CHUNK_SIZE);
+    _decrementChunks(provider, NB_CHUNKS);
     uint amount = NB_CHUNKS * _getEtherPrice(true, false);
     daiToken.transferFrom(msg.sender, address(this), amount);
     userPositions[msg.sender].push(id);
@@ -150,7 +188,7 @@ contract VirtualGambling {
       // ... has to pay a USDC fee to the provider
       _sendFeeToProvider(positionId);
       // Unlock provider's ETH
-      _unlockProviderEther(positions[positionId].provider, positions[positionId].lockedEther);
+      _incrementChunks(positions[positionId].provider, 1);
     }
     emit PositionClosed(msg.sender, positionId, positions[positionId].endValue);
   }
@@ -159,33 +197,21 @@ contract VirtualGambling {
    * Getters
    */
   function getChunksCount() public view returns(uint count) {
-    return chunks.length;
+    return totalAvailableChunks;
   }
 
   /**
    * Helpers
    */
 
-  // Find available provider
-  function _findAvailableProvider() private returns (address) {
-    if (chunks.length == 0) {
-      revert NotEnoughProviders(chunks.length, 1);
+  // Find available chunks
+  function _findAvailableProvider() view private returns (address) {
+    if (availableProviders.length == 0) {
+      revert NotEnoughProviders(availableProviders.length, 1);
     }
-    address provider = chunks[chunks.length - 1];
-    chunks.pop();
-    return provider;
+    return availableProviders[availableProviders.length - 1];
   }
 
-  // Lock provider's ethers when opening the position
-  function _lockProviderEther(address provider, uint amount) private {
-    liquidityProviders[provider] -= amount;
-  }
-
-  // Unlock provider's ethers when closing the position
-  function _unlockProviderEther(address provider, uint amount) private {
-    liquidityProviders[provider] += amount;
-  }
-  
   // Calculate off-chain price
   function _getEtherPrice(bool start, bool win) private returns (uint) {
     uint price = swapper.getEtherPrice();
