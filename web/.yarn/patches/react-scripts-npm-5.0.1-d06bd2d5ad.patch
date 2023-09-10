@@ -1,0 +1,14 @@
+diff --git a/config/webpack.config.js b/config/webpack.config.js
+index e465d8e7a00ec889e9c4c29ba7812019f8319a41..b8094dda10e4d9e059550c61620e196f9e7bf3e8 100644
+--- a/config/webpack.config.js
++++ b/config/webpack.config.js
+@@ -303,6 +303,9 @@ module.exports = function (webpackEnv) {
+       ],
+     },
+     resolve: {
++	  fallback: {
++		crypto: require.resolve("crypto-browserify"),
++      },
+       // This allows you to set a fallback for where webpack should look for modules.
+       // We placed these paths second because we want `node_modules` to "win"
+       // if there are any conflicts. This matches Node resolution mechanism.

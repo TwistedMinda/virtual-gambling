@@ -1,0 +1,45 @@
+@import 'styles/vars';
+
+.game-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 100%;
+
+  @media (max-width: $smallScreenMax) {
+    align-items: flex-start;
+  }
+	
+	&::before {
+		content: ' ';
+		display: block;
+		position: fixed;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		opacity: 0.12;
+
+		background-image: url('../images/bg-space.jpeg');
+		background-size: cover;
+		background-position: center;
+		pointer-events: none;
+	}
+}
+
+.main-box {
+  width: 60%;
+
+  @media (max-width: $smallScreenMax) {
+    width: 100%;
+    padding: 20px;
+  }
+}
+
+.subtitle {
+  color: $gray;
+  font-weight: bold;
+  text-align: center;
+  line-height: 1.3rem;
+}

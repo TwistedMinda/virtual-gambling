@@ -1,0 +1,18 @@
+.main-btn {
+  display: inline-block;
+  min-width: 140px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  text-align: center;
+  user-select: none;
+
+  &.disabled {
+    opacity: 0.52;
+  }
+
+  &.secondary {
+    background-color: rgba(0, 0, 0, 0.49);
+  }
+}

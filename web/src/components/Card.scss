@@ -1,0 +1,44 @@
+@import 'styles/vars';
+
+.card {
+  border: 1px solid #333;
+  padding: 1rem 0rem;
+  text-align: center;
+  line-height: 1.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  align-self: center;
+	background-color: #161414;
+
+  &.on,
+  &:hover {
+    border-bottom: 1px solid #4f7942;
+  }
+  &.off {
+    opacity: 0.7;
+  }
+  &.off:hover {
+    border-bottom: 1px solid #555;
+  }
+
+  &.top-space {
+    margin-top: 2rem;
+  }
+  &.bot-space {
+    margin-bottom: 1rem;
+  }
+
+  &.btn-animated {
+    animation: bounce 0.8s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes bounce {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.02);
+  }
+}
