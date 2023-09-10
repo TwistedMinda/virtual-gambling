@@ -2,12 +2,13 @@
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./Swapper.sol";
+//import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface WETHERC20 is IERC20 {
-  function deposit() external payable;
-  function withdraw(uint256 amount) external;
-}
+// interface WETHERC20 is IERC20 {
+//   function deposit() external payable;
+//   function withdraw(uint256 amount) external;
+// }
 
 contract VirtualGambling {
   /**
@@ -54,6 +55,7 @@ contract VirtualGambling {
    * Storage 
    */
   address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+  address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
   WETHERC20 public daiToken = WETHERC20(DAI);
   
   uint id = 0;
@@ -61,6 +63,11 @@ contract VirtualGambling {
   mapping (address => uint) public liquidityProviders;
 
   address[] chunks;
+  Swapper swapper;
+
+  constructor(address swapperAddress) {
+    swapper = Swapper(swapperAddress);
+  }
 
   /**
    * Liquidity provider methods
@@ -117,7 +124,12 @@ contract VirtualGambling {
    */
 
   // Close position
-  function closePosition(uint positionId) public {
+  function closePosition(uint positionId) public _requireOpenPosition(positionId) {
+    if (msg.sender == positions[positionId].provider) {
+      if (positions[positionId].date + MAX_POSITION_DURATION > block.timestamp) {
+        revert PositionNotYetOutdated(positionId);
+      }
+    }
     uint currentValue = positions[positionId].lockedEther * _getEtherPrice(false, positionId > 0);
     positions[positionId].open = false;
     positions[positionId].endValue = currentValue;
@@ -168,8 +180,11 @@ contract VirtualGambling {
   // Sell locked ETH
   function _sellLockedETH(uint positionId) private returns (uint) {
     // TODO: Sell locked ether using Uniswap to USDC
-    uint value = 1 ether;
-    return value;
+    uint amount = positions[positionId].lockedEther;
+    swapper.wrapEther{value: amount}();
+    TransferHelper.safeApprove(WETH, address(swapper), amount);
+
+    return swapper.swapEtherToDAI(DAI, positions[positionId].lockedEther);
    }
 
   // Share USDC profits
@@ -183,8 +198,10 @@ contract VirtualGambling {
 
   // Send USDC fee to provider
   function _sendFeeToProvider(uint positionId) private {
+    // Provider get its profits
     uint fee = positions[positionId].amount * LOSER_FEE_PERCENTAGE / 100;
     daiToken.transfer(positions[positionId].provider, fee);
+    // Gambler gets the initially deposited amount (- fee)
     daiToken.transfer(positions[positionId].owner, positions[positionId].amount - fee);
   }
 

@@ -77,13 +77,13 @@ describe("VirtualGambling", function () {
    */
 
   it("deploy contract", async function () {
-    contract = await deployContract()
     swapperContract = await deploySwapperContract()
+    contract = await deployContract(await swapperContract.getAddress())
   })
 
   it("fund DAI", async function () {
     const [gambler] = await ethers.getSigners()
-    const value = getAmount("5")
+    const value = getAmount("1.5")
     await swapperContract.wrapEther({ value: value })
     await approveToken(wethToken, await swapperContract.getAddress(), value)
     await swapperContract.swapEtherToDAI(daiToken, value)
@@ -95,24 +95,24 @@ describe("VirtualGambling", function () {
     const [_, liquidityProvider] = await ethers.getSigners()
     const contractAddr = await contract.getAddress()   
 
-    const amount = getAmount("5")
-    const action = contract.connect(liquidityProvider).depositLiquidity({ value: amount })
+    const amountETH = getAmount("1")
+    const action = contract.connect(liquidityProvider).depositLiquidity({ value: amountETH })
     if (network.name === "localhost") {
-      await expectBalanceChange(contractAddr, action, amount)
+      await expectBalanceChange(contractAddr, action, amountETH)
     } else {
       await expectFinish(action, res =>
-        res.to.emit(contract, "DepositedLiquidity").withArgs(liquidityProvider.address, amount)
+        res.to.emit(contract, "DepositedLiquidity").withArgs(liquidityProvider.address, amountETH)
       )
     }
   })
 
   const lossPositionId = 0
-  const allowed = getAmount("2000") // More than current Chunk price
+  const allowedDAI = getAmount("2000") // More than current Chunk price
   
   it("(loss case) take position", async function () {
     const [gambler] = await ethers.getSigners()
     
-    await approveToken(daiToken, await contract.getAddress(), allowed)
+    await approveToken(daiToken, await contract.getAddress(), allowedDAI)
     await expectFinish(
       contract.connect(gambler).openPosition(),
       (res) => res.to.emit(contract, "PositionOpen").withArgs(gambler.address, lossPositionId, (x: number) => {
@@ -132,6 +132,8 @@ describe("VirtualGambling", function () {
         return true
       })
     )
+
+    await log()
   })
 
   const winPositionId = 1
@@ -139,7 +141,7 @@ describe("VirtualGambling", function () {
   it("(win case) take position", async function () {
     const [gambler] = await ethers.getSigners()
     
-    await approveToken(daiToken, await contract.getAddress(), allowed)
+    await approveToken(daiToken, await contract.getAddress(), allowedDAI)
     await expectFinish(
       contract.connect(gambler).openPosition(),
       (res) => res.to.emit(contract, "PositionOpen").withArgs(gambler.address, winPositionId, (x: number) => {
@@ -159,6 +161,8 @@ describe("VirtualGambling", function () {
         return true
       })
     )
+
+    await log()
   })
   
   it("withdraw ETH", async function () {

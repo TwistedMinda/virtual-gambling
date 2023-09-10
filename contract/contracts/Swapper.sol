@@ -43,7 +43,7 @@ contract Swapper {
   function swapEtherToDAI(
     address _tokenOut,
     uint256 _amountIn
-  ) external payable returns (uint256 amountOut) {
+  ) external returns (uint256 amountOut) {
     wethToken.transferFrom(msg.sender, address(this), _amountIn);
 
     TransferHelper.safeApprove(WETH, address(swapRouter), _amountIn);
