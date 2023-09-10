@@ -12,7 +12,11 @@ export default function GamePage() {
 			<div className="main-box">
 				<div className="col center">
 					<div onClick={show} className="btn">
-						Create Bucket
+						Provide Liquidity
+					</div>
+
+					<div onClick={show} className="btn">
+						Go & Gamble
 					</div>
 				</div>
 
