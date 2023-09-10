@@ -16,7 +16,7 @@ const displayEther = (val: number | bigint) => ethers.formatUnits(val, 18)
 
 let contract: VirtualGambling
 
-const amount = ethers.parseUnits("0.001", 18)
+const getAmount = (amount: string) => ethers.parseUnits(amount, 18)
 
 const getBalance = async (address: string) =>
   await ethers.provider.getBalance(address)
@@ -65,22 +65,26 @@ describe("VirtualGambling", function () {
     const [_, user2] = await ethers.getSigners()
     const contractAddr = await contract.getAddress()   
 
-    const action = contract.connect(user2).depositEth({ value: amount })
+    const amount = getAmount("1")
+    const action = contract.connect(user2).depositLiquidity({ value: amount })
     if (network.name === "localhost") {
       await expectBalanceChange(contractAddr, action, amount)
     } else {
       await expectFinish(action, res =>
-        res.to.emit(contract, "Deposited").withArgs(user2.address, amount)
+        res.to.emit(contract, "DepositedLiquidity").withArgs(user2.address, amount)
       )
     }
   })
 
+  let openPositionId = 0
+  
   it("take position", async function () {
     const [owner] = await ethers.getSigners()
     
+    const tenDolls = getAmount("10")
     await expectFinish(
-      contract.connect(owner).openPosition(200000),
-      (res) => res.to.emit(contract, "PositionOpen")
+      contract.connect(owner).openPosition(tenDolls),
+      (res) => res.to.emit(contract, "PositionOpen").withArgs(owner.address, openPositionId, tenDolls, 100)
     )
   })
 
@@ -88,8 +92,35 @@ describe("VirtualGambling", function () {
     const [owner] = await ethers.getSigners()
     
     await expectFinish(
-      contract.connect(owner).closePosition(200000),
-      (res) => res.to.emit(contract, "PositionClosed")
+      contract.connect(owner).closePosition(openPositionId),
+      (res) => res.to.emit(contract, "PositionClosed").withArgs(owner.address, openPositionId, 50)
+    )
+  })
+  
+  it("withdraw ETH", async function () {
+    const [_, user2] = await ethers.getSigners()
+
+    const amount = getAmount("1")
+    const action = contract.connect(user2).withdrawLiquidity(amount)
+    if (network.name === "localhost") {
+      await expectBalanceChange(user2.address, action, amount)
+    } else {
+      await expectFinish(action, res =>
+        res.to.emit(contract, "WithdrawnLiquidity").withArgs(user2.address, amount)
+      )
+    }
+  })
+
+  /**
+   * Errors tests
+   */
+
+  it("can't close twice", async function () {
+    const [owner] = await ethers.getSigners()
+    
+    await expectError(
+      contract.connect(owner).closePosition(0),
+      "PositionAlreadyClosed"
     )
   })
 })
