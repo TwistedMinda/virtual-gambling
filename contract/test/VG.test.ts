@@ -46,8 +46,9 @@ const getFormattedBalance = async (address: string) =>
 const log = async () => {
   const [gambler, liquidityProvider] = await ethers.getSigners()
   console.table({
-    User1: await getFormattedBalance(gambler.address),
-    User2: await getFormattedBalance(liquidityProvider.address),
+    Gambler: [await getFormattedBalance(gambler.address), await getBalanceForToken(daiToken, gambler.address)],
+    LiquidityProvider: [await getFormattedBalance(liquidityProvider.address), await getBalanceForToken(daiToken, liquidityProvider.address)],
+    Contract: [await getFormattedBalance(await contract.getAddress()), await getBalanceForToken(daiToken, await contract.getAddress())]
   })
 }
 
@@ -119,8 +120,6 @@ describe("VirtualGambling", function () {
     )
   })
 
-  return;
-
   it("(loss case) quit position", async function () {
     const [gambler] = await ethers.getSigners()
     
@@ -128,8 +127,11 @@ describe("VirtualGambling", function () {
       contract.connect(gambler).closePosition(lossPositionId),
       (res) => res.to.emit(contract, "PositionClosed").withArgs(gambler.address, lossPositionId, getAmount("50"))
     )
+
+    await log()
   })
 
+  return;
 
   const winPositionId = 1
   it("(win case) take position", async function () {

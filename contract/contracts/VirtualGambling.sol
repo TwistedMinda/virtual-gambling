@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface DaiToken {
-  function transfer(address dst, uint wad) external returns (bool);
-  function transferFrom(address src, address dst, uint wad) external returns (bool);
-  function balanceOf(address guy) external view returns (uint);
+interface WETHERC20 is IERC20 {
+  function deposit() external payable;
+  function withdraw(uint256 amount) external;
 }
 
 contract VirtualGambling {
@@ -18,6 +18,7 @@ contract VirtualGambling {
   uint constant MAX_POSITION_DURATION = 7 days;
   uint constant LOSER_FEE_PERCENTAGE = 1;
   uint constant WINNER_FEE_PERCENTAGE = 50;
+  uint constant MINIMUM_CHUNK_SIZE = 0.001 ether;
 
   /**
    * Errors 
@@ -49,15 +50,19 @@ contract VirtualGambling {
     uint date;
     bool open;
   }
-
+  
   /**
    * Storage 
    */
+  address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+  WETHERC20 public daiToken = WETHERC20(DAI);
+  
   uint id = 0;
   uint availableBalance = 0;
   mapping (uint => Position) public positions;
   mapping (address => uint) public liquidityProviders;
-  DaiToken public daiToken;
+
+  uint[] chunks;
 
   /**
    * Liquidity provider methods
@@ -116,8 +121,7 @@ contract VirtualGambling {
     positions[positionId].open = false;
     positions[positionId].endValue = currentValue;
     // Calculate virtual USDC profits
-    uint profits = currentValue - positions[positionId].amount;
-    if (profits > 0) {
+    if (currentValue > positions[positionId].amount) {
       // Gambler successfully sold it for higher value
       // ... we share profits to both participants
       uint sellValue = _sellLockedETH(positionId);
@@ -138,6 +142,9 @@ contract VirtualGambling {
 
   // Find available provider
   function _findAvailableProvider() view private returns (address) {
+    for (uint i = 0; i < chunks.length; i++) {
+      
+    }
     return msg.sender;
   }
 
