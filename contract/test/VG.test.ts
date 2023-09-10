@@ -84,7 +84,7 @@ describe("VirtualGambling", function () {
     
     await expectFinish(
       contract.connect(owner).openPosition(investment),
-      (res) => res.to.emit(contract, "PositionOpen").withArgs(owner.address, lossPositionId, investment, 100)
+      (res) => res.to.emit(contract, "PositionOpen").withArgs(owner.address, lossPositionId, investment)
     )
   })
 
