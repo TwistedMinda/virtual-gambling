@@ -190,6 +190,8 @@ describe("VirtualGambling", function () {
         return true
       })
     )
+    
+    await log()
   })
   
   /**

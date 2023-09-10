@@ -85,7 +85,7 @@ contract Swapper {
         tokenIn: WETH,
         tokenOut: DAI,
         fee: feeTier,
-        amountIn: 1,
+        amountIn: 1 ether,
         sqrtPriceLimitX96: 0
       });
 

@@ -44,6 +44,7 @@ contract VirtualGambling {
     uint id;
     uint amount;
     uint lockedEther;
+    uint nbChunks;
     uint endValue;
     address owner;
     address provider;
@@ -102,10 +103,10 @@ contract VirtualGambling {
 
   // Open a position
   function openPosition() public { // _minimumGamblingDeposit(chunks)
+    uint NB_CHUNKS = 1;
     address provider = _findAvailableProvider();
-    uint lockEther = 1 * CHUNK_SIZE;
-    _lockProviderEther(provider, lockEther);
-    uint amount = lockEther * _getEtherPrice(true, false);
+    _lockProviderEther(provider, CHUNK_SIZE);
+    uint amount = NB_CHUNKS * _getEtherPrice(true, false);
     daiToken.transferFrom(msg.sender, address(this), amount);
     positions[id] = Position({
       id: id,
@@ -113,7 +114,8 @@ contract VirtualGambling {
       date: block.timestamp,
       owner: msg.sender,
       provider: provider,
-      lockedEther: lockEther,
+      lockedEther: CHUNK_SIZE,
+      nbChunks: NB_CHUNKS,
       endValue: 0,
       open: true
     });
@@ -132,7 +134,7 @@ contract VirtualGambling {
         revert PositionNotYetOutdated(positionId);
       }
     }
-    uint currentValue = positions[positionId].lockedEther * _getEtherPrice(false, positionId > 0);
+    uint currentValue = positions[positionId].nbChunks * _getEtherPrice(false, positionId > 0);
     positions[positionId].open = false;
     positions[positionId].endValue = currentValue;
     // Calculate virtual USDC profits
@@ -172,16 +174,19 @@ contract VirtualGambling {
   function _unlockProviderEther(address provider, uint amount) private {
     liquidityProviders[provider] += amount;
   }
-
-  // Calculate off-chain price
-  function _getEtherPrice(bool start, bool win) pure private returns (uint) {
-    // TODO: Calculate price using Chainlink
-    return start ? 1000 : win ? 2000 : 500;
-  }
   
   // Calculate off-chain price
-  function _test_getEtherPrice(bool start, bool win) private returns (uint) {
-    return swapper.getEtherPrice();
+  function _getEtherPrice(bool start, bool win) private returns (uint) {
+    uint price = swapper.getEtherPrice();
+    console.log('start', start);
+    console.log('win', win);
+    if (start) {
+      return price;
+    }
+    if (win) {
+      return price + (price / 2);
+    }
+    return price - (price / 2);
   }
 
   // Sell locked ETH
