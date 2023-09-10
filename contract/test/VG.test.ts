@@ -107,12 +107,12 @@ describe("VirtualGambling", function () {
   it("deposit/withdraw ETH", async function () {
     const [_, liquidityProvider] = await ethers.getSigners()
 
-    const depositAmount = getAmount("2")
+    const depositAmount = getAmount("0.2")
     await expectFinish(
       contract.connect(liquidityProvider).depositLiquidity({ value: depositAmount }),
       (res) => res.to.emit(contract, "DepositedLiquidity").withArgs(liquidityProvider.address, depositAmount)
     )
-    const withdrawAmount = getAmount("1")
+    const withdrawAmount = getAmount("0.1")
     const action = contract.connect(liquidityProvider).withdrawLiquidity(withdrawAmount)
     if (network.name === "localhost") {
       await expectBalanceChange(liquidityProvider.address, action, withdrawAmount)

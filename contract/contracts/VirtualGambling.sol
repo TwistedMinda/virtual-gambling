@@ -17,7 +17,7 @@ contract VirtualGambling {
   uint constant MAX_POSITION_DURATION = 1 days;
   uint constant LOSER_FEE_PERCENTAGE = 1;
   uint constant WINNER_FEE_PERCENTAGE = 50;
-  uint constant CHUNK_SIZE = 1 ether;
+  uint constant CHUNK_SIZE = 0.1 ether;
 
   /**
    * Errors 
@@ -153,6 +153,13 @@ contract VirtualGambling {
       _unlockProviderEther(positions[positionId].provider, positions[positionId].lockedEther);
     }
     emit PositionClosed(msg.sender, positionId, positions[positionId].endValue);
+  }
+
+  /**
+   * Getters
+   */
+  function getChunksCount() public view returns(uint count) {
+    return chunks.length;
   }
 
   /**
