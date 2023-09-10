@@ -191,11 +191,9 @@ contract VirtualGambling {
 
   // Sell locked ETH
   function _sellLockedETH(uint positionId) private returns (uint) {
-    // TODO: Sell locked ether using Uniswap to USDC
     uint amount = positions[positionId].lockedEther;
     swapper.wrapEther{value: amount}();
     TransferHelper.safeApprove(WETH, address(swapper), amount);
-
     return swapper.swapEtherToDAI(DAI, positions[positionId].lockedEther);
    }
 
