@@ -12,8 +12,6 @@ import { ContractRunner, ContractTransactionReceipt, ContractTransactionResponse
 
 const { network } = require('hardhat');
 
-const toWei = (val: number) => ethers.parseUnits(val.toString(), 18)
-const displayEther = (val: number | bigint) => ethers.formatUnits(val, 18)
 
 let swapperContract: Swapper
 let contract: VirtualGambling
@@ -36,6 +34,7 @@ const getBalanceForToken = async (tokenAddress: string, address: string) =>
   )
 
 const getAmount = (amount: string) => ethers.parseUnits(amount, 18)
+const displayEther = (val: number | bigint) => ethers.formatUnits(val, 18)
 
 const getBalance = async (address: string) =>
   await ethers.provider.getBalance(address)
@@ -84,7 +83,7 @@ describe("VirtualGambling", function () {
 
   it("fund DAI", async function () {
     const [gambler] = await ethers.getSigners()
-    const value = ethers.parseUnits("5", 18)
+    const value = getAmount("5")
     await swapperContract.wrapEther({ value: value })
     await approveToken(wethToken, await swapperContract.getAddress(), value)
     await swapperContract.swapEtherToDAI(daiToken, value)
