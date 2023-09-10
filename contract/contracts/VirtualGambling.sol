@@ -218,8 +218,8 @@ contract VirtualGambling {
   function _sellLockedETH(uint positionId) private returns (uint) {
     uint amount = positions[positionId].lockedEther;
     swapper.wrapEther{value: amount}();
-    TransferHelper.safeApprove(swapper.getWETHAddress(), address(swapper), amount);
-    return swapper.swapEtherToDAI(swapper.getDAIAddress(), positions[positionId].lockedEther);
+    TransferHelper.safeApprove(address(swapper.getWETHToken()), address(swapper), amount);
+    return swapper.swapEtherToDAI(positions[positionId].lockedEther);
    }
 
   // Share USDC profits
@@ -250,7 +250,6 @@ contract VirtualGambling {
     }
     _;
   }
-
 
   modifier _requireOpenPosition(uint positionId) {
     if (!positions[positionId].open) {

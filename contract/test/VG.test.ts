@@ -9,6 +9,7 @@ import { ethers } from "hardhat";
 import ERC20ABI from './erc20.abi.json'
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { ContractRunner, ContractTransactionReceipt, ContractTransactionResponse, TransactionReceipt } from "ethers";
+import { tokens } from "../scripts/tokens";
 
 const { network } = require('hardhat');
 
@@ -16,8 +17,8 @@ const { network } = require('hardhat');
 let swapperContract: Swapper
 let contract: VirtualGambling
 
-const daiToken = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
-const wethToken = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+const daiToken = tokens.sepolia.DAI
+const wethToken = tokens.sepolia.WETH
 
 const getTokenContract = (tokenAddress: string, runner: ContractRunner = ethers.provider) =>
   new ethers.Contract(tokenAddress, ERC20ABI, runner);
@@ -99,7 +100,7 @@ describe("VirtualGambling", function () {
     const value = getAmount("1.5")
     await swapperContract.wrapEther({ value: value })
     await approveToken(wethToken, await swapperContract.getAddress(), value)
-    await swapperContract.swapEtherToDAI(daiToken, value)
+    await swapperContract.swapEtherToDAI(value)
     const gamblerBalance = await getBalanceForToken(daiToken, await gambler.address)
     console.log('> Funded', gamblerBalance, 'DAI')
   })

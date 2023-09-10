@@ -13,79 +13,57 @@ interface WETHERC20 is IERC20 {
 }
 
 contract Swapper {
-  struct Token {
-    address tokenAddress;
-    bool available;
-  }
+  
+  IERC20 daiToken;
+  WETHERC20 wethToken;
 
-  ISwapRouter public immutable swapRouter;
-  IQuoterV2 public immutable quoter;
-  address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+  ISwapRouter immutable swapRouter;
+  IQuoterV2 immutable quoter;
+  uint24 constant feeTier = 3000;
   address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-  uint24 public constant feeTier = 3000;
 
-  IERC20 public daiToken = IERC20(DAI);
-  WETHERC20 public wethToken = WETHERC20(WETH);
-
-  constructor(ISwapRouter _swapRouter, IQuoterV2 _quoter) {
+  constructor(
+    ISwapRouter _swapRouter,
+    IQuoterV2 _quoter,
+    address _daiToken,
+    address _wethToken
+  ) {
     swapRouter = _swapRouter;
     quoter = _quoter;
+    daiToken = IERC20(_daiToken);
+    wethToken = WETHERC20(_wethToken);
   }
   
-  /**
-   * DAI Address
-   */
-  function getDAIAddress() public pure returns (address) {
-    return DAI;
-  }
-
+  // DAI Token
   function getDAIToken() public view returns (IERC20) {
     return daiToken;
   }
-
-  /**
-   * WETH Address
-   */
-  function getWETHAddress() public pure returns (address) {
-    return WETH;
+  
+  // WETH Token
+  function getWETHToken() public view returns (WETHERC20) {
+    return wethToken;
   }
 
-  /**
-   * Buying
-   */
+  // Wrap ETH to WETH for swapping
   function wrapEther() external payable {
     require(msg.value > 0, "No Ether sent");
     wethToken.deposit{value : msg.value}();
     wethToken.transfer(msg.sender, msg.value);
   }
 
+  // Swap some ether to DAI
   function swapEtherToDAI(
-    address _tokenOut,
     uint256 _amountIn
   ) external returns (uint256 amountOut) {
     wethToken.transferFrom(msg.sender, address(this), _amountIn);
 
-    TransferHelper.safeApprove(WETH, address(swapRouter), _amountIn);
-
-    IQuoterV2.QuoteExactInputSingleParams memory quoteParams = IQuoterV2
-      .QuoteExactInputSingleParams({
-        tokenIn: WETH,
-        tokenOut: _tokenOut,
-        fee: feeTier,
-        amountIn: _amountIn,
-        sqrtPriceLimitX96: 0
-      });
-
-    uint256 amountOutMinimum;
-    uint160 _a;
-    uint32 _b;
-    uint256 _c;
-    (amountOutMinimum, _a, _b, _c) = quoter.quoteExactInputSingle(quoteParams);
+    TransferHelper.safeApprove(address(wethToken), address(swapRouter), _amountIn);
+    uint amountOutMinimum = _getQuote(_amountIn);
 
     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
       .ExactInputSingleParams({
-        tokenIn: WETH,
-        tokenOut: _tokenOut,
+        tokenIn: address(wethToken),
+        tokenOut: address(daiToken),
         fee: feeTier,
         recipient: msg.sender,
         deadline: block.timestamp,
@@ -98,13 +76,23 @@ contract Swapper {
     return amountOut;
   }
 
+  // Get current price of ETH in DAI
   function getEtherPrice() public returns (uint256 price) {
+    return _getQuote(1 ether);
+  }
+
+  /**
+   * Helpers
+   */
+
+  // Get quote for ETH in DAI & given amount
+  function _getQuote(uint _amountIn) private returns (uint256 price) {
     IQuoterV2.QuoteExactInputSingleParams memory quoteParams = IQuoterV2
       .QuoteExactInputSingleParams({
-        tokenIn: WETH,
-        tokenOut: DAI,
+        tokenIn: address(wethToken),
+        tokenOut: address(daiToken),
         fee: feeTier,
-        amountIn: 1 ether,
+        amountIn: _amountIn,
         sqrtPriceLimitX96: 0
       });
 
