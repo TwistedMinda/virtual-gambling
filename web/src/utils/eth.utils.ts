@@ -14,7 +14,7 @@ export type EthereumAddress = `0x${string}`;
 
 export const addrs: Record<number, Record<string, string>> = {
 	[sepolia.id]: {
-    addr: SEPOLIA_CONFIG.prod.contractAddress,
+    addr: SEPOLIA_CONFIG.dev.contractAddress,
     currency: 'ETH'
   },
 };
