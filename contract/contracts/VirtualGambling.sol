@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 
 interface DaiToken {
-    function transfer(address dst, uint wad) external returns (bool);
-    function transferFrom(address src, address dst, uint wad) external returns (bool);
-    function balanceOf(address guy) external view returns (uint);
+  function transfer(address dst, uint wad) external returns (bool);
+  function transferFrom(address src, address dst, uint wad) external returns (bool);
+  function balanceOf(address guy) external view returns (uint);
 }
 
 contract VirtualGambling {
@@ -65,20 +65,17 @@ contract VirtualGambling {
 
   // Provide liquidity for the gamblers
   function depositLiquidity() payable public _minimumLiquidityDeposit(msg.value) {
-    liquidityProviders[msg.sender] += msg.value;
     availableBalance += msg.value;
+    liquidityProviders[msg.sender] += msg.value;
     emit DepositedLiquidity(msg.sender, msg.value);
   }
 
   // Retrieve liquidity from the contract
   function withdrawLiquidity(uint amount) public {
-    uint available = liquidityProviders[msg.sender];
-    if (available < amount) {
-      revert NotEnoughWithdrawableLiquidity(available, amount);
+    uint liquidity = liquidityProviders[msg.sender];
+    if (liquidity < amount) {
+      revert NotEnoughWithdrawableLiquidity(liquidity, amount);
     }
-    availableBalance -= amount;
-    liquidityProviders[msg.sender] -= amount;
-    payable(msg.sender).transfer(amount);
     emit WithdrawnLiquidity(msg.sender, amount);
   }
 
@@ -87,20 +84,20 @@ contract VirtualGambling {
    */
 
   // Open a position
-  function openPosition(uint amount) public
-    _minimumGamblingDeposit(amount)
-    {
-    uint lockEther = amount / _getEtherPrice(true, false);
+  function openPosition(uint amount) public _minimumGamblingDeposit(amount) {
+    uint lockEther = (amount / (_getEtherPrice(true, false) * 1 ether) * 1 ether);
     if (lockEther < availableBalance) {
       revert InsufficientLiquidity(availableBalance, lockEther);
     }
+    address provider = _findAvailableProvider();
+    _lockProviderEther(provider, lockEther);
     daiToken.transferFrom(msg.sender, address(this), amount);
     positions[id] = Position({
       id: id,
       amount: amount,
       date: block.timestamp,
       owner: msg.sender,
-      provider: address(0),
+      provider: provider,
       lockedEther: lockEther,
       endValue: 0,
       open: true
@@ -114,7 +111,7 @@ contract VirtualGambling {
    */
 
   // Close position
-  function closePosition(uint positionId) private {
+  function closePosition(uint positionId) public {
     uint currentValue = positions[positionId].lockedEther * _getEtherPrice(false, positionId > 0);
     positions[positionId].open = false;
     positions[positionId].endValue = currentValue;
@@ -129,6 +126,8 @@ contract VirtualGambling {
       // Gambler failed to sell it for higher value
       // ... has to pay a USDC fee to the provider
       _sendFeeToProvider(positionId);
+      // Unlock provider's ETH
+      _unlockProviderEther(positions[positionId].provider, positions[positionId].lockedEther);
     }
     emit PositionClosed(msg.sender, positionId, positions[positionId].endValue);
   }
@@ -137,6 +136,23 @@ contract VirtualGambling {
    * Helpers
    */
 
+  // Find available provider
+  function _findAvailableProvider() view private returns (address) {
+    return msg.sender;
+  }
+
+  // Lock provider's ethers when opening the position
+  function _lockProviderEther(address provider, uint amount) private {
+    availableBalance -= amount;
+    //liquidityProviders[provider] -= amount;
+  }
+
+  // Unlock provider's ethers when closing the position
+  function _unlockProviderEther(address provider, uint amount) private {
+    availableBalance += amount;
+    liquidityProviders[provider] += amount;
+  }
+
   // Calculate off-chain price
   function _getEtherPrice(bool start, bool win) pure private returns (uint) {
     // TODO: Calculate price using Chainlink
@@ -144,9 +160,10 @@ contract VirtualGambling {
   }
 
   // Sell locked ETH
-  function _sellLockedETH(uint positionId) pure private returns (uint) {
+  function _sellLockedETH(uint positionId) private returns (uint) {
     // TODO: Sell locked ether using Uniswap to USDC
-    return 100 ether;
+    uint value = 100 ether;
+    return value;
    }
 
   // Share USDC profits
