@@ -10,7 +10,7 @@ export const useDepositLiquidity = (enabled: boolean) => {
     ...cfg,
     functionName: 'depositLiquidity',
     overrides: {
-      value: parseEther("0.1")
+      value: parseEther("0.01")
     },
     enabled: !!address,
   });
