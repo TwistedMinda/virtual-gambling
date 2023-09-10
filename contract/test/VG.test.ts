@@ -104,18 +104,23 @@ describe("VirtualGambling", function () {
     console.log('> Funded', gamblerBalance, 'DAI')
   })
 
-  it("deposit/withdraw ETH", async function () {
+  it("deposit ETH", async function () {
     const [_, liquidityProvider] = await ethers.getSigners()
 
-    const depositAmount = getAmount("0.2")
+    const depositAmount = getAmount("0.02")
     await expectFinish(
       contract.connect(liquidityProvider).depositLiquidity({ value: depositAmount }),
       (res) => res.to.emit(contract, "DepositedLiquidity").withArgs(liquidityProvider.address, depositAmount)
     )
+  })
+
+  it("withdraw some ETH", async function () {
+    const [_, liquidityProvider] = await ethers.getSigners()
+
     const chunksToWithdraw = 1
     const action = contract.connect(liquidityProvider).withdrawLiquidity(chunksToWithdraw)
     if (network.name === "localhost") {
-      await expectBalanceChange(liquidityProvider.address, action, getAmount("0.1"))
+      await expectBalanceChange(liquidityProvider.address, action, getAmount("0.01"))
     } else {
       await expectFinish(action, res =>
         res.to.emit(contract, "WithdrawnLiquidity").withArgs(liquidityProvider.address, chunksToWithdraw)
