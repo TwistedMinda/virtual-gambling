@@ -61,6 +61,7 @@ contract VirtualGambling {
   
   uint id = 0;
   mapping (uint => Position) public positions;
+  mapping (address => uint[]) public userPositions;
   mapping (address => uint) public liquidityProviders;
 
   address[] chunks;
@@ -108,6 +109,7 @@ contract VirtualGambling {
     _lockProviderEther(provider, CHUNK_SIZE);
     uint amount = NB_CHUNKS * _getEtherPrice(true, false);
     daiToken.transferFrom(msg.sender, address(this), amount);
+    userPositions[msg.sender].push(id);
     positions[id] = Position({
       id: id,
       amount: amount,
