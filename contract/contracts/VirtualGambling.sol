@@ -117,7 +117,7 @@ contract VirtualGambling {
   // Terminate position
   // ... call can originate from both participants
   function terminatePosition(uint positionId) private {
-    positions[positionId].endPrice = _calculatePrice(false, false);
+    positions[positionId].endPrice = _calculatePrice(false, positionId > 0);
     positions[positionId].open = false;
     emit PositionClosed(msg.sender, positionId, positions[positionId].endPrice);
   }

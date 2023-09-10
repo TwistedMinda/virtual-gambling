@@ -76,26 +76,47 @@ describe("VirtualGambling", function () {
     }
   })
 
-  let openPositionId = 0
+  const lossPositionId = 0
+  const investment = getAmount("100")
   
-  it("take position", async function () {
+  it("(loss case) take position", async function () {
     const [owner] = await ethers.getSigners()
     
-    const tenDolls = getAmount("10")
     await expectFinish(
-      contract.connect(owner).openPosition(tenDolls),
-      (res) => res.to.emit(contract, "PositionOpen").withArgs(owner.address, openPositionId, tenDolls, 100)
+      contract.connect(owner).openPosition(investment),
+      (res) => res.to.emit(contract, "PositionOpen").withArgs(owner.address, lossPositionId, investment, 100)
     )
   })
 
-  it("quit position", async function () {
+  it("(loss case) quit position", async function () {
     const [owner] = await ethers.getSigners()
     
     await expectFinish(
-      contract.connect(owner).closePosition(openPositionId),
-      (res) => res.to.emit(contract, "PositionClosed").withArgs(owner.address, openPositionId, 50)
+      contract.connect(owner).closePosition(lossPositionId),
+      (res) => res.to.emit(contract, "PositionClosed").withArgs(owner.address, lossPositionId, 50)
     )
   })
+
+
+  const winPositionId = 1
+  it("(win case) take position", async function () {
+    const [owner] = await ethers.getSigners()
+    
+    await expectFinish(
+      contract.connect(owner).openPosition(investment),
+      (res) => res.to.emit(contract, "PositionOpen").withArgs(owner.address, winPositionId, investment, 100)
+    )
+  })
+
+  it("(win case) quit position", async function () {
+    const [owner] = await ethers.getSigners()
+    
+    await expectFinish(
+      contract.connect(owner).closePosition(winPositionId),
+      (res) => res.to.emit(contract, "PositionClosed").withArgs(owner.address, winPositionId, 200)
+    )
+  })
+  
   
   it("withdraw ETH", async function () {
     const [_, user2] = await ethers.getSigners()
