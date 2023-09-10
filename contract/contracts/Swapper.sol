@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
 import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
@@ -11,17 +10,13 @@ import "hardhat/console.sol";
 
 interface WETHERC20 is IERC20 {
   function deposit() external payable;
-  function withdraw(uint256 amount) external;
 }
 
-contract Swapper is Ownable {
+contract Swapper {
   struct Token {
     address tokenAddress;
     bool available;
   }
-
-  Token[] public availableTokens;
-  mapping(address => mapping(address => uint256)) public balances;
 
   ISwapRouter public immutable swapRouter;
   IQuoterV2 public immutable quoter;
@@ -52,13 +47,12 @@ contract Swapper is Ownable {
     wethToken.transferFrom(msg.sender, address(this), _amountIn);
 
     TransferHelper.safeApprove(WETH, address(swapRouter), _amountIn);
-    uint24 fee = 3000;
 
     IQuoterV2.QuoteExactInputSingleParams memory quoteParams = IQuoterV2
       .QuoteExactInputSingleParams({
         tokenIn: WETH,
         tokenOut: _tokenOut,
-        fee: fee,
+        fee: feeTier,
         amountIn: _amountIn,
         sqrtPriceLimitX96: 0
       });
@@ -73,7 +67,7 @@ contract Swapper is Ownable {
       .ExactInputSingleParams({
         tokenIn: WETH,
         tokenOut: _tokenOut,
-        fee: fee,
+        fee: feeTier,
         recipient: msg.sender,
         deadline: block.timestamp,
         amountIn: _amountIn,
