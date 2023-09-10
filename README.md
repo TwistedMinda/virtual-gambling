@@ -11,6 +11,7 @@
     - If the position is winning, you share 50% of the DAI profits with the providers
 
 *POSITION MAX DURATION*: 1 day
+
 *POSITION CHUNK SIZE*: 1 ETH
 
 ## Contract
