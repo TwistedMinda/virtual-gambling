@@ -79,7 +79,7 @@ describe("VirtualGambling", function () {
     const [owner] = await ethers.getSigners()
     
     await expectFinish(
-      contract.connect(owner).takePosition(200000),
+      contract.connect(owner).openPosition(200000),
       (res) => res.to.emit(contract, "PositionOpen")
     )
   })
@@ -88,7 +88,7 @@ describe("VirtualGambling", function () {
     const [owner] = await ethers.getSigners()
     
     await expectFinish(
-      contract.connect(owner).quitPosition(200000),
+      contract.connect(owner).closePosition(200000),
       (res) => res.to.emit(contract, "PositionClosed")
     )
   })

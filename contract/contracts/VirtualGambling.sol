@@ -25,11 +25,11 @@ contract VirtualGambling {
     emit Deposited(msg.sender, msg.value);
   }
 
-  function takePosition(uint amount) public {
+  function openPosition(uint amount) public {
     emit PositionOpen(msg.sender, ++id, amount);
   }
 
-  function quitPosition(uint positionId) public {
+  function closePosition(uint positionId) public {
     emit PositionClosed(msg.sender, positionId, 2000);
   }
 
