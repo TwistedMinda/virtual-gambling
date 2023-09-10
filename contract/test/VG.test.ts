@@ -44,10 +44,23 @@ const getFormattedBalance = async (address: string) =>
 
 const log = async () => {
   const [gambler, liquidityProvider] = await ethers.getSigners()
+  const contractAddr = await contract.getAddress()
   console.table({
-    Gambler: [await getFormattedBalance(gambler.address), await getBalanceForToken(daiToken, gambler.address)],
-    LiquidityProvider: [await getFormattedBalance(liquidityProvider.address), await getBalanceForToken(daiToken, liquidityProvider.address)],
-    Contract: [await getFormattedBalance(await contract.getAddress()), await getBalanceForToken(daiToken, await contract.getAddress())]
+    Gambler: [
+      await getFormattedBalance(gambler.address),
+      await getBalanceForToken(daiToken, gambler.address),
+      await contract.liquidityProviders(gambler.address)
+    ],
+    LiquidityProvider: [
+      await getFormattedBalance(liquidityProvider.address),
+      await getBalanceForToken(daiToken, liquidityProvider.address),
+      await contract.liquidityProviders(liquidityProvider.address)
+    ],
+    Contract: [
+      await getFormattedBalance(contractAddr),
+      await getBalanceForToken(daiToken, contractAddr),
+      await contract.liquidityProviders(contractAddr)
+    ]
   })
 }
 
@@ -91,6 +104,24 @@ describe("VirtualGambling", function () {
     console.log('> Funded', gamblerBalance, 'DAI')
   })
 
+  it("deposit then withdraw ETH", async function () {
+    const [_, liquidityProvider] = await ethers.getSigners()
+
+    const amount = getAmount("1")
+    await expectFinish(
+      contract.connect(liquidityProvider).depositLiquidity({ value: amount }),
+      (res) => res.to.emit(contract, "DepositedLiquidity").withArgs(liquidityProvider.address, amount)
+    )
+    const action = contract.connect(liquidityProvider).withdrawLiquidity(amount)
+    if (network.name === "localhost") {
+      await expectBalanceChange(liquidityProvider.address, action, amount)
+    } else {
+      await expectFinish(action, res =>
+        res.to.emit(contract, "WithdrawnLiquidity").withArgs(liquidityProvider.address, amount)
+      )
+    }
+  })
+
   it("deposit ETH", async function () {
     const [_, liquidityProvider] = await ethers.getSigners()
     const contractAddr = await contract.getAddress()   
@@ -132,8 +163,6 @@ describe("VirtualGambling", function () {
         return true
       })
     )
-
-    await log()
   })
 
   const winPositionId = 1
@@ -161,24 +190,8 @@ describe("VirtualGambling", function () {
         return true
       })
     )
-
-    await log()
   })
   
-  it("withdraw ETH", async function () {
-    const [_, liquidityProvider] = await ethers.getSigners()
-
-    const amount = getAmount("1")
-    const action = contract.connect(liquidityProvider).withdrawLiquidity(amount)
-    if (network.name === "localhost") {
-      await expectBalanceChange(liquidityProvider.address, action, amount)
-    } else {
-      await expectFinish(action, res =>
-        res.to.emit(contract, "WithdrawnLiquidity").withArgs(liquidityProvider.address, amount)
-      )
-    }
-  })
-
   /**
    * Negative tests
    */
@@ -189,6 +202,16 @@ describe("VirtualGambling", function () {
     await expectError(
       contract.connect(gambler).closePosition(0),
       "PositionAlreadyClosed"
+    )
+  })
+
+  it("can't withdraw twice", async function () {
+    const [_, liquidityProvider] = await ethers.getSigners()
+    
+    const amount = getAmount("1")
+    await expectError(
+      contract.connect(liquidityProvider).withdrawLiquidity(amount),
+      "NotEnoughWithdrawableLiquidity"
     )
   })
 })

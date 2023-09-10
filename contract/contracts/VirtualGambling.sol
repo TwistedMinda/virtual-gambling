@@ -91,6 +91,8 @@ contract VirtualGambling {
     if (liquidity < amount) {
       revert NotEnoughWithdrawableLiquidity(liquidity, amount);
     }
+    liquidityProviders[msg.sender] -= amount;
+    payable(msg.sender).transfer(amount);
     emit WithdrawnLiquidity(msg.sender, amount);
   }
 
@@ -175,6 +177,11 @@ contract VirtualGambling {
   function _getEtherPrice(bool start, bool win) pure private returns (uint) {
     // TODO: Calculate price using Chainlink
     return start ? 1000 : win ? 2000 : 500;
+  }
+  
+  // Calculate off-chain price
+  function _test_getEtherPrice(bool start, bool win) private returns (uint) {
+    return swapper.getEtherPrice();
   }
 
   // Sell locked ETH

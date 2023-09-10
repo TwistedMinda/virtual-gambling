@@ -78,4 +78,22 @@ contract Swapper {
     amountOut = swapRouter.exactInputSingle(params);
     return amountOut;
   }
+
+  function getEtherPrice() public returns (uint256 price) {
+    IQuoterV2.QuoteExactInputSingleParams memory quoteParams = IQuoterV2
+      .QuoteExactInputSingleParams({
+        tokenIn: WETH,
+        tokenOut: DAI,
+        fee: feeTier,
+        amountIn: 1,
+        sqrtPriceLimitX96: 0
+      });
+
+    uint256 amountOutMinimum;
+    uint160 _a;
+    uint32 _b;
+    uint256 _c;
+    (amountOutMinimum, _a, _b, _c) = quoter.quoteExactInputSingle(quoteParams);
+    return amountOutMinimum;
+  }
 }
