@@ -2,9 +2,8 @@ import { deployContract, deploySwapperContract, verifyContract } from "../artifa
 
 async function main() {
   const swapper = await deploySwapperContract()
-  const contract = await deployContract(await swapper.getAddress())
-  const address = await contract.getAddress()
-  await verifyContract(address, [])
+  const swapperAddress = await swapper.getAddress()
+  await deployContract(swapperAddress)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
