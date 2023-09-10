@@ -82,39 +82,6 @@ contract VirtualGambling {
    * Liquidity provider methods
    */
 
-  // Add available chunks
-  function _incrementChunks(address provider, uint chunks) private {
-    uint current = userAvailableProvider[provider].chunks;
-    if (current == 0) {
-      availableProviders.push(provider);
-      // Save index of the new provider
-      userAvailableProvider[provider].index = availableProviders.length - 1;
-    }
-    // Increment chunks
-    userAvailableProvider[provider].chunks += chunks;
-    totalAvailableChunks += chunks;
-  }
-  
-
-  // Remove available chunks
-  function _decrementChunks(address provider, uint chunks) private {
-    uint current = userAvailableProvider[provider].chunks;
-    if (current == 1) {
-      // No more available chunks, remove from list
-      removeProviderAtIndex(userAvailableProvider[provider].index);
-    }
-    // Decrement available chunks
-    userAvailableProvider[provider].chunks -= chunks;
-    totalAvailableChunks -= chunks;
-  }
-
-  // Remove provider from available providers
-  function removeProviderAtIndex(uint index) private {
-    availableProviders[index] = availableProviders[availableProviders.length - 1];
-    userAvailableProvider[availableProviders[index]].index = index;
-    availableProviders.pop();
-  }
-
   // Provide liquidity for the gamblers
   function depositLiquidity() payable public
     _isChunkCompatible(msg.value) {
@@ -203,6 +170,39 @@ contract VirtualGambling {
   /**
    * Helpers
    */
+
+  // Add available chunks
+  function _incrementChunks(address provider, uint chunks) private {
+    uint current = userAvailableProvider[provider].chunks;
+    if (current == 0) {
+      availableProviders.push(provider);
+      // Save index of the new provider
+      userAvailableProvider[provider].index = availableProviders.length - 1;
+    }
+    // Increment chunks
+    userAvailableProvider[provider].chunks += chunks;
+    totalAvailableChunks += chunks;
+  }
+  
+
+  // Remove available chunks
+  function _decrementChunks(address provider, uint chunks) private {
+    uint current = userAvailableProvider[provider].chunks;
+    if (current == 1) {
+      // No more available chunks, remove from list
+      removeProviderAtIndex(userAvailableProvider[provider].index);
+    }
+    // Decrement available chunks
+    userAvailableProvider[provider].chunks -= chunks;
+    totalAvailableChunks -= chunks;
+  }
+
+  // Remove provider from available providers
+  function removeProviderAtIndex(uint index) private {
+    availableProviders[index] = availableProviders[availableProviders.length - 1];
+    userAvailableProvider[availableProviders[index]].index = index;
+    availableProviders.pop();
+  }
 
   // Find available chunks
   function _findAvailableProvider() view private returns (address) {
