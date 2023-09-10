@@ -24,4 +24,4 @@ export const CONTRACT_INTERFACE = (
   }
 };
 
-extractABI('HateMe', process.env.ABI_EXTRACT_DESTINATION);
+extractABI('VirtualGambling', process.env.ABI_EXTRACT_DESTINATION);
