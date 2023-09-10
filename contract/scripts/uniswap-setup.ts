@@ -15,8 +15,11 @@ import {
   bytecode as QUOTER_BYTECODE,
 } from '@uniswap/v3-periphery/artifacts/contracts/lens/QuoterV2.sol/QuoterV2.json'
 
-const createPool = async () => {
-
+const createPool = async (factory: any, token1: string, token2: string) => {
+  const pool = await factory.createPool(token1, token2, 3000)
+  const tx = await pool.wait(1);
+  const poolAddress = tx.logs[0].args[4]
+  console.log('yay', poolAddress)
 }
 
 export const getUniswapSetup = async (wethAddress: string) => {
@@ -41,9 +44,7 @@ export const getUniswapSetup = async (wethAddress: string) => {
   const daiTokenAddr = await daiToken.getAddress()
   console.log('🚀 Deployed "MockDAI": ', daiTokenAddr)
 
-  const pool = await (factory as any).createPool(daiTokenAddr, wethAddress, 3000)
-
-  await createPool()
+  await createPool(factory, daiTokenAddr, wethAddress)
 
   // 4: Add liquidity to the pool
   // add liquidity to the pool that I just created above
