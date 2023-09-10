@@ -25,6 +25,8 @@ import {
   bytecode as QUOTER_BYTECODE,
 } from '@uniswap/v3-periphery/artifacts/contracts/lens/QuoterV2.sol/QuoterV2.json'
 import { IERC20 } from "../typechain-types"
+import { WETHERC20Interface } from "../typechain-types/contracts/Swapper.sol/WETHERC20"
+import { WETHERC20 } from "../typechain-types/contracts/VirtualGambling.sol"
 
 const getAmount = (amount: string) => ethers.parseUnits(amount, 18)
 
@@ -32,7 +34,7 @@ const setupPool = async (
   factory: any,
   router: any,
   token1: IERC20,
-  token2: IERC20
+  token2: WETHERC20
 ) => {
   const [owner] = await ethers.getSigners()
   const token1Addr = await token1.getAddress()
@@ -44,19 +46,22 @@ const setupPool = async (
   const poolAddress = createPoolTx.logs[0].args[4]
   const Pool = await ethers.getContractAt(POOL_ABI, poolAddress)
   
+  // Wrap some ETH
+  await token2.deposit({ value: getAmount("1") })
+
   // Authorize filling the pool
-  const daiToApprove = getAmount("1000");
+  const daiToApprove = getAmount("1400");
   await token1.approve(await router.getAddress(), daiToApprove);
   
-  const ethToApprove = getAmount("0.01");
+  const ethToApprove = getAmount("1");
   await token2.approve(await router.getAddress(), ethToApprove);
 
   // Add liquidity to the pool
   const addLiquidityTx = await Pool.mint(
     poolAddress,
     [token1Addr, token2Addr], // Token addresses
-    [getAmount("10"), getAmount("10")], // Amounts to add
-    [getAmount("9"), getAmount("9")], // Minimum amounts to add
+    [getAmount("1"), getAmount("1")], // Amounts to add
+    [getAmount("1"), getAmount("1")], // Minimum amounts to add
     owner.address, // recipient
     Math.floor(Date.now() / 1000) + 60 * 20 // Deadline
   );
