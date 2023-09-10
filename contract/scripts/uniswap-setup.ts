@@ -51,11 +51,10 @@ const setupPool = async (
   const poolAddress = createPoolTx.logs[0].args[4]
   const poolContract = await ethers.getContractAt(POOL_ABI, poolAddress)
 
+  // Retrieve position manager for the pair WETH/DAI
   const PositionManager = await ethers.getContractFactory(POSITION_MANAGER_ABI, POSITION_MANAGER_BYTECODE)
-  const positionManager = await PositionManager.deploy()
+  const positionManager = await PositionManager.deploy(factory, token2Addr, token1Addr) as any
   const positionManagerAddr = await positionManager.getAddress()
-
-  console.log('Position manager', positionManagerAddr)
 
   /**
    * Pool info
@@ -81,7 +80,7 @@ const setupPool = async (
   await token2.approve(await router.getAddress(), ethToApprove);
 
   // Add liquidity to the pool
-  const addLiquidityTx = await poolContract.mint(
+  const addLiquidityTx = await positionManager.mint(
     poolAddress,
     [token1Addr, token2Addr], // Token addresses
     [getAmount("1"), getAmount("1")], // Amounts to add
@@ -119,7 +118,7 @@ export const getUniswapSetup = async (wethAddress: string) => {
 
   console.log('🚀 Uniswap booted\n- Deployed Factory, SwapRouter, Quoter & MockDAI\n- Retrieved WETH9')
   // Setup liquidiy pool
-  await setupPool(factory, swapRouter, daiToken, wethToken as unknown as IERC20)
+  await setupPool(factory, swapRouter, daiToken, wethToken as unknown as WETHERC20)
 
   return {
     DAI: daiTokenAddr,
