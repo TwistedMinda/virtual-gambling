@@ -1,10 +1,7 @@
-import { parseEther, useEthereumConfig } from "utils/eth.utils";
+import { parseEther, toBigNumber, useEthereumConfig } from "utils/eth.utils";
 import { useContractWrite, usePrepareContractWrite } from "wagmi";
-import { useAddress } from "./useAddress";
 
-
-export const useDepositLiquidity = (enabled: boolean) => {
-  const address = useAddress()
+export const useDepositLiquidity = () => {
   const cfg = useEthereumConfig();
   const { config } = usePrepareContractWrite({
     ...cfg,
@@ -12,13 +9,28 @@ export const useDepositLiquidity = (enabled: boolean) => {
     overrides: {
       value: parseEther("0.01")
     },
-    enabled: !!address,
   });
   const { writeAsync, isLoading } = useContractWrite(config);
   const depositLiquidity = async () => writeAsync?.();
 
   return {
     depositLiquidity,
+    isLoading
+  };
+};
+
+export const useWithdrawLiquidity = () => {
+  const cfg = useEthereumConfig();
+  const { config } = usePrepareContractWrite({
+    ...cfg,
+    functionName: 'withdrawLiquidity',
+    args: [toBigNumber(1)],
+  });
+  const { writeAsync, isLoading } = useContractWrite(config);
+  const withdrawLiquidity = async () => writeAsync?.();
+
+  return {
+    withdrawLiquidity,
     isLoading
   };
 };
