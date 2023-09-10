@@ -25,8 +25,8 @@ const getTokenContract = (tokenAddress: string, runner: ContractRunner = ethers.
   new ethers.Contract(tokenAddress, ERC20ABI, runner);
 
 const approveToken = async (tokenAddress: string, receiver: string, value: any) => {
-  const [owner] = await ethers.getSigners()
-  const token = getTokenContract(tokenAddress, owner)
+  const [gambler] = await ethers.getSigners()
+  const token = getTokenContract(tokenAddress, gambler)
   return token.approve(receiver, value)
 }
 
@@ -44,10 +44,10 @@ const getFormattedBalance = async (address: string) =>
   displayEther(await getBalance(address))
 
 const log = async () => {
-  const [owner, user2] = await ethers.getSigners()
+  const [gambler, liquidityProvider] = await ethers.getSigners()
   console.table({
-    User1: await getFormattedBalance(owner.address),
-    User2: await getFormattedBalance(user2.address),
+    User1: await getFormattedBalance(gambler.address),
+    User2: await getFormattedBalance(liquidityProvider.address),
   })
 }
 
@@ -82,26 +82,26 @@ describe("VirtualGambling", function () {
   })
 
   it("fund DAI", async function () {
-    const [owner] = await ethers.getSigners()
+    const [gambler] = await ethers.getSigners()
     const value = ethers.parseUnits("5", 18)
     await swapperContract.wrapEther({ value: value })
     await approveToken(wethToken, await swapperContract.getAddress(), value)
     await swapperContract.swapEtherToDAI(daiToken, value)
-    const userBalance = await getBalanceForToken(daiToken, await owner.address)
-    console.log('> Funded', userBalance, 'DAI')
+    const gamblerBalance = await getBalanceForToken(daiToken, await gambler.address)
+    console.log('> Funded', gamblerBalance, 'DAI')
   })
 
   it("deposit ETH", async function () {
-    const [_, user2] = await ethers.getSigners()
+    const [_, liquidityProvider] = await ethers.getSigners()
     const contractAddr = await contract.getAddress()   
 
     const amount = getAmount("1")
-    const action = contract.connect(user2).depositLiquidity({ value: amount })
+    const action = contract.connect(liquidityProvider).depositLiquidity({ value: amount })
     if (network.name === "localhost") {
       await expectBalanceChange(contractAddr, action, amount)
     } else {
       await expectFinish(action, res =>
-        res.to.emit(contract, "DepositedLiquidity").withArgs(user2.address, amount)
+        res.to.emit(contract, "DepositedLiquidity").withArgs(liquidityProvider.address, amount)
       )
     }
   })
@@ -110,71 +110,71 @@ describe("VirtualGambling", function () {
   const investment = getAmount("100")
   
   it("(loss case) take position", async function () {
-    const [owner] = await ethers.getSigners()
+    const [gambler] = await ethers.getSigners()
     
     await approveToken(daiToken, await contract.getAddress(), investment)
     await expectFinish(
-      contract.connect(owner).openPosition(investment),
-      (res) => res.to.emit(contract, "PositionOpen").withArgs(owner.address, lossPositionId, investment)
+      contract.connect(gambler).openPosition(investment),
+      (res) => res.to.emit(contract, "PositionOpen").withArgs(gambler.address, lossPositionId, investment)
     )
   })
 
   return;
 
   it("(loss case) quit position", async function () {
-    const [owner] = await ethers.getSigners()
+    const [gambler] = await ethers.getSigners()
     
     await expectFinish(
-      contract.connect(owner).closePosition(lossPositionId),
-      (res) => res.to.emit(contract, "PositionClosed").withArgs(owner.address, lossPositionId, getAmount("50"))
+      contract.connect(gambler).closePosition(lossPositionId),
+      (res) => res.to.emit(contract, "PositionClosed").withArgs(gambler.address, lossPositionId, getAmount("50"))
     )
   })
 
 
   const winPositionId = 1
   it("(win case) take position", async function () {
-    const [owner] = await ethers.getSigners()
+    const [gambler] = await ethers.getSigners()
     
     await approveToken(daiToken, await contract.getAddress(), investment)
     await expectFinish(
-      contract.connect(owner).openPosition(investment),
-      (res) => res.to.emit(contract, "PositionOpen").withArgs(owner.address, winPositionId, investment)
+      contract.connect(gambler).openPosition(investment),
+      (res) => res.to.emit(contract, "PositionOpen").withArgs(gambler.address, winPositionId, investment)
     )
   })
 
   it("(win case) quit position", async function () {
-    const [owner] = await ethers.getSigners()
+    const [gambler] = await ethers.getSigners()
     
     await expectFinish(
-      contract.connect(owner).closePosition(winPositionId),
-      (res) => res.to.emit(contract, "PositionClosed").withArgs(owner.address, winPositionId, getAmount("200"))
+      contract.connect(gambler).closePosition(winPositionId),
+      (res) => res.to.emit(contract, "PositionClosed").withArgs(gambler.address, winPositionId, getAmount("200"))
     )
   })
   
   
   it("withdraw ETH", async function () {
-    const [_, user2] = await ethers.getSigners()
+    const [_, liquidityProvider] = await ethers.getSigners()
 
     const amount = getAmount("1")
-    const action = contract.connect(user2).withdrawLiquidity(amount)
+    const action = contract.connect(liquidityProvider).withdrawLiquidity(amount)
     if (network.name === "localhost") {
-      await expectBalanceChange(user2.address, action, amount)
+      await expectBalanceChange(liquidityProvider.address, action, amount)
     } else {
       await expectFinish(action, res =>
-        res.to.emit(contract, "WithdrawnLiquidity").withArgs(user2.address, amount)
+        res.to.emit(contract, "WithdrawnLiquidity").withArgs(liquidityProvider.address, amount)
       )
     }
   })
 
   /**
-   * Errors tests
+   * Negative tests
    */
 
   it("can't close twice", async function () {
-    const [owner] = await ethers.getSigners()
+    const [gambler] = await ethers.getSigners()
     
     await expectError(
-      contract.connect(owner).closePosition(0),
+      contract.connect(gambler).closePosition(0),
       "PositionAlreadyClosed"
     )
   })
