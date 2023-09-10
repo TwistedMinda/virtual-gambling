@@ -1,5 +1,7 @@
 ### Usage
 
+Come for a Virtual Gambling party at [https://web3-virtual-gambling.vercel.app](https://web3-virtual-gambling.vercel.app)
+
 - Liquidity providers:
   - Deposit ETH by chunks (Withdraw at any time)
   - Wait that the gamblers sell your ETH for a guarenteed higher price than currently
