@@ -87,19 +87,22 @@ const setupPool = async (
   console.log('🚀 Approved tokens')
 
   // Add liquidity to the pool
-  const addLiquidityTx = await positionManager.mint({
+  const params = {
     token0: token1Addr,
     token1: token2Addr,
     fee: FEE,
-    tickLower: 0n,
+    tickLower: tickSpacing / 2n,
     tickUpper: tickSpacing * 2n,
+    liquidity: liquidity,
     amount0Desired: daiToApprove,
     amount1Desired: ethToApprove,
-    amount0Min: daiToApprove - 100n,
-    amount1Min: ethToApprove - 100n,
+    amount0Min: daiToApprove / 2n,
+    amount1Min: ethToApprove / 2n,
     recipient: owner.address,
     deadline: ((await ethers.provider.getBlock('latest'))?.timestamp ?? 0) + 600,
-  })
+  }
+  console.log(params)
+  const addLiquidityTx = await positionManager.mint(params)
   await addLiquidityTx.wait(1);
 
   console.log('🚀 Filled liquidity pool')
