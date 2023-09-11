@@ -10,17 +10,15 @@ import ERC20ABI from './erc20.abi.json'
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { ContractRunner, ContractTransactionReceipt, ContractTransactionResponse, TransactionReceipt } from "ethers";
 import { config } from "../scripts/config";
+import { getUniswapSetup } from "../scripts/uniswap-setup";
 
 const { network } = require('hardhat');
 
 let swapperContract: Swapper
 let contract: VirtualGambling
 
-console.log(network.name)
-const cfg = config[network.name] ?? config.localhost
-
-const daiToken = cfg?.DAI ?? ''
-const wethToken = cfg?.WETH ?? ''
+let daiToken = ''
+let wethToken = ''
 
 const getTokenContract = (tokenAddress: string, runner: ContractRunner = ethers.provider) =>
   new ethers.Contract(tokenAddress, ERC20ABI, runner);
@@ -93,7 +91,15 @@ describe("VirtualGambling", function () {
    */
 
   it("deploy contract", async function () {
-    const cfg = config[network.name] ?? config.localhost
+    let cfg = config[network.name] ?? config.localhost
+
+    if (!cfg.router) {
+      // We need to Uniswap ourselves
+      cfg = await getUniswapSetup(cfg.WETH)
+    }
+    daiToken = cfg.DAI
+    wethToken = cfg.WETH
+    console.log('dai', daiToken)
 
     swapperContract = await deploySwapperContract(cfg)
     contract = await deployContract(await swapperContract.getAddress())
@@ -101,14 +107,15 @@ describe("VirtualGambling", function () {
 
   it("fund DAI", async function () {
     const [gambler] = await ethers.getSigners()
-    const value = getAmount("1.5")
+
+    const value = getAmount("1")
     await swapperContract.wrapEther({ value: value })
     await approveToken(wethToken, await swapperContract.getAddress(), value)
     await swapperContract.swapEtherToDAI(value)
     const gamblerBalance = await getBalanceForToken(daiToken, await gambler.address)
-    console.log('> Funded', gamblerBalance, 'DAI')
+    console.log('> Gambler has ', gamblerBalance, 'DAI')
   })
-  return;
+  
   it("deposit ETH", async function () {
     const [_, liquidityProvider] = await ethers.getSigners()
 
@@ -132,6 +139,8 @@ describe("VirtualGambling", function () {
       )
     }
   })
+
+  return;
 
   const lossPositionId = 0
   const allowedDAI = getAmount("2000") // More than current Chunk price

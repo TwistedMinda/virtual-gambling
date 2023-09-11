@@ -32,8 +32,20 @@ import {
 import { IERC20 } from "../typechain-types"
 import { WETHERC20Interface } from "../typechain-types/contracts/Swapper.sol/WETHERC20"
 import { WETHERC20 } from "../typechain-types/contracts/VirtualGambling.sol"
+import { BigNumberish } from "ethers"
 
 const getAmount = (amount: string) => ethers.parseUnits(amount, 18)
+const displayAmount = (amount: BigNumberish) => ethers.formatUnits(amount)
+const shouldRevertOrder = (tokenA: string, tokenB: string) => {
+  const tokenAAddress = tokenA.toLowerCase();
+  const tokenBAddress = tokenB.toLowerCase();
+  // Determine lexicographical order
+  if (tokenAAddress < tokenBAddress) {
+    return false
+  }
+  console.log('reverted!')
+  return true
+}
 
 const setupPool = async (
   factory: any,
@@ -45,63 +57,50 @@ const setupPool = async (
   const wethTokenAddr = await wethToken.getAddress()
   const factoryAddr = await factory.getAddress()
   const FEE = 3000
-  
-  // Create & retrieve the pool
-  const pool = await factory.createPool(daiTokenAddr, wethTokenAddr, FEE)
-  const createPoolTx = await pool.wait(1);
-  const poolAddress = createPoolTx.logs[0].args[4]
-  const poolContract = await ethers.getContractAt(POOL_ABI, poolAddress)
-  const [
-    t0,
-    t1,
-    f,
-    tickSpacing,
-    liquidity,
-    slot0
-  ] = await Promise.all([
-    poolContract.token0(),
-    poolContract.token1(),
-    poolContract.fee(),
-    poolContract.tickSpacing(),
-    poolContract.liquidity(),
-    poolContract.slot0(),
-  ])
-  console.log('tickSpacing', tickSpacing, 'liquidity', liquidity)
+  const revert = shouldRevertOrder(daiTokenAddr, wethTokenAddr)
 
   // Retrieve position manager for the pair WETH/DAI
   const PositionManager = await ethers.getContractFactory(POSITION_MANAGER_ABI, POSITION_MANAGER_BYTECODE)
   const positionManager = await PositionManager.deploy(factoryAddr, wethTokenAddr, "0x0000000000000000000000000000000000000000") as any
   const positionManagerAddr = await positionManager.getAddress()
-  console.log('🚀 Deployed PositionManager', positionManagerAddr)
   
   // Wrap some ETH
   await wethToken.deposit({ value: getAmount("1") })
-  console.log('🚀 Wrapped some Ethers')
 
   // Authorize filling the pool
-  const daiToApprove = getAmount("1400");
+  const daiToApprove = getAmount("10");
   await daiToken.approve(positionManagerAddr, daiToApprove);
   
-  const ethToApprove = getAmount("1");
+  const ethToApprove = getAmount("0.01");
   await wethToken.approve(positionManagerAddr, ethToApprove);
-  console.log('🚀 Approved tokens')
+
+  const token0 = revert ? wethTokenAddr : daiTokenAddr
+  const token1 = revert ? daiTokenAddr : wethTokenAddr
+
+  // Create the pool
+  const ll = await positionManager.createAndInitializePoolIfNecessary(token0, token1, FEE, 4295128739);
+  await ll.wait(1);
 
   // Add liquidity to the pool
+  const amount0Desired = revert ? ethToApprove : daiToApprove
+  const amount1Desired = revert ? daiToApprove : ethToApprove
+  const amount0Min = revert ? ethToApprove / 2n : daiToApprove / 2n
+  const amount1Min = revert ? daiToApprove / 2n : ethToApprove / 2n
   const params = {
-    token0: daiTokenAddr,
-    token1: wethTokenAddr,
+    token0,
+    token1,
     fee: FEE,
-    tickLower: tickSpacing / 2n,
-    tickUpper: tickSpacing * 2n,
-    liquidity: liquidity,
-    amount0Desired: daiToApprove,
-    amount1Desired: ethToApprove,
-    amount0Min: daiToApprove / 2n,
-    amount1Min: ethToApprove / 2n,
+    tickLower: -120n,
+    tickUpper: 120n,
+    amount0Desired,
+    amount1Desired,
+    amount0Min: 0,
+    amount1Min: 0,
     recipient: owner.address,
     deadline: (((await ethers.provider.getBlock('latest'))?.timestamp ?? 0) * 1000) + 600,
   }
   console.log(params)
+  
   const addLiquidityTx = await positionManager.mint(params)
   await addLiquidityTx.wait(1);
 
