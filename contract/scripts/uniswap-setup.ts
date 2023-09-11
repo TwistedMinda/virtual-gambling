@@ -37,57 +37,46 @@ const getAmount = (amount: string) => ethers.parseUnits(amount, 18)
 
 const setupPool = async (
   factory: any,
-  router: any,
   token1: IERC20,
   token2: WETHERC20
 ) => {
   const [owner] = await ethers.getSigners()
   const token1Addr = await token1.getAddress()
   const token2Addr = await token2.getAddress()
+  const factoryAddr = await factory.getAddress()
   
-  // Create & retrieve the pool
-  const pool = await factory.createPool(token1Addr, token2Addr, 3000)
-  const createPoolTx = await pool.wait(1);
-  const poolAddress = createPoolTx.logs[0].args[4]
-  const poolContract = await ethers.getContractAt(POOL_ABI, poolAddress)
-
   // Retrieve position manager for the pair WETH/DAI
   const PositionManager = await ethers.getContractFactory(POSITION_MANAGER_ABI, POSITION_MANAGER_BYTECODE)
-  const positionManager = await PositionManager.deploy(factory, token2Addr, token1Addr) as any
+  const positionManager = await PositionManager.deploy(factoryAddr, token2Addr, token1Addr) as any
   const positionManagerAddr = await positionManager.getAddress()
-
-  /**
-   * Pool info
-   */
-  // const res = await Promise.all([
-  //   poolContract.token0(),
-  //   poolContract.token1(),
-  //   poolContract.fee(),
-  //   poolContract.tickSpacing(),
-  //   poolContract.liquidity(),
-  //   poolContract.slot0(),
-  // ])
-  // console.log(res)
-
+  console.log('🚀 Deployed PositionManager', positionManagerAddr)
+  
   // Wrap some ETH
   await token2.deposit({ value: getAmount("1") })
+  console.log('🚀 Wrapped some Ethers')
 
   // Authorize filling the pool
   const daiToApprove = getAmount("1400");
-  await token1.approve(await router.getAddress(), daiToApprove);
+  await token1.approve(positionManagerAddr, daiToApprove);
   
   const ethToApprove = getAmount("1");
-  await token2.approve(await router.getAddress(), ethToApprove);
+  await token2.approve(positionManagerAddr, ethToApprove);
+  console.log('🚀 Approved tokens')
 
   // Add liquidity to the pool
-  const addLiquidityTx = await positionManager.mint(
-    poolAddress,
-    [token1Addr, token2Addr], // Token addresses
-    [getAmount("1"), getAmount("1")], // Amounts to add
-    [getAmount("1"), getAmount("1")], // Minimum amounts to add
-    owner.address, // recipient
-    Math.floor(Date.now() / 1000) + 60 * 20 // Deadline
-  );
+  const addLiquidityTx = await positionManager.mint({
+    token0: token1Addr,
+    token1: token2Addr,
+    fee: 3000,
+    tickLower: 3000,
+    tickUpper: 2000,
+    amount0Desired: daiToApprove,
+    amount1Desired: ethToApprove,
+    amount0Min: daiToApprove,
+    amount1Min: ethToApprove,
+    recipient: owner.address,
+    deadline: new Date().getTime() + 1000 * 60 * 10,
+  })
   await addLiquidityTx.wait();
 
   console.log('🚀 Filled liquidity pool')
@@ -118,7 +107,7 @@ export const getUniswapSetup = async (wethAddress: string) => {
 
   console.log('🚀 Uniswap booted\n- Deployed Factory, SwapRouter, Quoter & MockDAI\n- Retrieved WETH9')
   // Setup liquidiy pool
-  await setupPool(factory, swapRouter, daiToken, wethToken as unknown as WETHERC20)
+  await setupPool(factory, daiToken, wethToken as unknown as WETHERC20)
 
   return {
     DAI: daiTokenAddr,
