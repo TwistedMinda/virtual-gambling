@@ -140,8 +140,6 @@ describe("VirtualGambling", function () {
     }
   })
 
-  return;
-
   const lossPositionId = 0
   const allowedDAI = getAmount("2000") // More than current Chunk price
   

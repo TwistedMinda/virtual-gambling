@@ -97,7 +97,6 @@ const setupPool = async (
     recipient: owner.address,
     deadline: (((await ethers.provider.getBlock('latest'))?.timestamp ?? 0) * 1000) + 600,
   }
-  console.log(params)
   
   const addLiquidityTx = await positionManager.mint(params)
   await addLiquidityTx.wait(1);
