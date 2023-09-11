@@ -30,12 +30,9 @@ import {
   bytecode as QUOTER_BYTECODE,
 } from '@uniswap/v3-periphery/artifacts/contracts/lens/QuoterV2.sol/QuoterV2.json'
 import { IERC20 } from "../typechain-types"
-import { WETHERC20Interface } from "../typechain-types/contracts/Swapper.sol/WETHERC20"
 import { WETHERC20 } from "../typechain-types/contracts/VirtualGambling.sol"
-import { BigNumberish } from "ethers"
 
 const getAmount = (amount: string) => ethers.parseUnits(amount, 18)
-const displayAmount = (amount: BigNumberish) => ethers.formatUnits(amount)
 const shouldRevertOrder = (tokenA: string, tokenB: string) => {
   const tokenAAddress = tokenA.toLowerCase();
   const tokenBAddress = tokenB.toLowerCase();
@@ -45,6 +42,41 @@ const shouldRevertOrder = (tokenA: string, tokenB: string) => {
   }
   console.log('reverted!')
   return true
+}
+
+export const getUniswapSetup = async (wethAddress: string) => {
+  // Factory
+  const Factory = await ethers.getContractFactory(FACTORY_ABI, FACTORY_BYTECODE)
+  const factory = await Factory.deploy()
+  const factoryAddr = await factory.getAddress()
+
+  // Router
+  const SwapRouter = await ethers.getContractFactory(SWAP_ROUTER_ABI, SWAP_ROUTER_BYTECODE)
+  const swapRouter = await SwapRouter.deploy(factoryAddr, wethAddress)
+  const swapRouterAddr = await swapRouter.getAddress()
+
+  // Quoter
+  const Quoter = await ethers.getContractFactory(QUOTER_ABI, QUOTER_BYTECODE)
+  const quoter = await Quoter.deploy(factoryAddr, wethAddress)
+  const quoterAddr = await quoter.getAddress()
+
+  // Mocked DAI
+  const DAI = await ethers.getContractFactory('MockDAI')
+  const daiToken = await DAI.deploy()
+  const daiTokenAddr = await daiToken.getAddress()
+
+  const wethToken = await ethers.getContractAt(WETH9_ABI, wethAddress)
+
+  console.log('🚀 Uniswap booted\n- Deployed Factory, SwapRouter, Quoter & MockDAI\n- Retrieved WETH9')
+  // Setup liquidiy pool
+  await setupPool(factory, daiToken, wethToken as unknown as WETHERC20)
+
+  return {
+    DAI: daiTokenAddr,
+    WETH: wethAddress,
+    router: swapRouterAddr,
+    quoter: quoterAddr,
+  }
 }
 
 const setupPool = async (
@@ -102,39 +134,4 @@ const setupPool = async (
   await addLiquidityTx.wait(1);
 
   console.log('🚀 Filled liquidity pool')
-}
-
-export const getUniswapSetup = async (wethAddress: string) => {
-  // Factory
-  const Factory = await ethers.getContractFactory(FACTORY_ABI, FACTORY_BYTECODE)
-  const factory = await Factory.deploy()
-  const factoryAddr = await factory.getAddress()
-
-  // Router
-  const SwapRouter = await ethers.getContractFactory(SWAP_ROUTER_ABI, SWAP_ROUTER_BYTECODE)
-  const swapRouter = await SwapRouter.deploy(factoryAddr, wethAddress)
-  const swapRouterAddr = await swapRouter.getAddress()
-
-  // Quoter
-  const Quoter = await ethers.getContractFactory(QUOTER_ABI, QUOTER_BYTECODE)
-  const quoter = await Quoter.deploy(factoryAddr, wethAddress)
-  const quoterAddr = await quoter.getAddress()
-
-  // Mocked DAI
-  const DAI = await ethers.getContractFactory('MockDAI')
-  const daiToken = await DAI.deploy()
-  const daiTokenAddr = await daiToken.getAddress()
-
-  const wethToken = await ethers.getContractAt(WETH9_ABI, wethAddress)
-
-  console.log('🚀 Uniswap booted\n- Deployed Factory, SwapRouter, Quoter & MockDAI\n- Retrieved WETH9')
-  // Setup liquidiy pool
-  await setupPool(factory, daiToken, wethToken as unknown as WETHERC20)
-
-  return {
-    DAI: daiTokenAddr,
-    WETH: wethAddress,
-    router: swapRouterAddr,
-    quoter: quoterAddr,
-  }
 }
