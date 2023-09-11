@@ -84,8 +84,6 @@ const setupPool = async (
   // Add liquidity to the pool
   const amount0Desired = revert ? ethToApprove : daiToApprove
   const amount1Desired = revert ? daiToApprove : ethToApprove
-  const amount0Min = revert ? ethToApprove / 2n : daiToApprove / 2n
-  const amount1Min = revert ? daiToApprove / 2n : ethToApprove / 2n
   const params = {
     token0,
     token1,
