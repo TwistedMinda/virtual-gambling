@@ -37,17 +37,17 @@ const getAmount = (amount: string) => ethers.parseUnits(amount, 18)
 
 const setupPool = async (
   factory: any,
-  token1: IERC20,
-  token2: WETHERC20
+  daiToken: IERC20,
+  wethToken: WETHERC20
 ) => {
   const [owner] = await ethers.getSigners()
-  const token1Addr = await token1.getAddress()
-  const token2Addr = await token2.getAddress()
+  const daiTokenAddr = await daiToken.getAddress()
+  const wethTokenAddr = await wethToken.getAddress()
   const factoryAddr = await factory.getAddress()
   const FEE = 3000
   
   // Create & retrieve the pool
-  const pool = await factory.createPool(token1Addr, token2Addr, FEE)
+  const pool = await factory.createPool(daiTokenAddr, wethTokenAddr, FEE)
   const createPoolTx = await pool.wait(1);
   const poolAddress = createPoolTx.logs[0].args[4]
   const poolContract = await ethers.getContractAt(POOL_ABI, poolAddress)
@@ -70,26 +70,26 @@ const setupPool = async (
 
   // Retrieve position manager for the pair WETH/DAI
   const PositionManager = await ethers.getContractFactory(POSITION_MANAGER_ABI, POSITION_MANAGER_BYTECODE)
-  const positionManager = await PositionManager.deploy(factoryAddr, token2Addr, "0x0000000000000000000000000000000000000000") as any
+  const positionManager = await PositionManager.deploy(factoryAddr, wethTokenAddr, "0x0000000000000000000000000000000000000000") as any
   const positionManagerAddr = await positionManager.getAddress()
   console.log('🚀 Deployed PositionManager', positionManagerAddr)
   
   // Wrap some ETH
-  await token2.deposit({ value: getAmount("1") })
+  await wethToken.deposit({ value: getAmount("1") })
   console.log('🚀 Wrapped some Ethers')
 
   // Authorize filling the pool
   const daiToApprove = getAmount("1400");
-  await token1.approve(positionManagerAddr, daiToApprove);
+  await daiToken.approve(positionManagerAddr, daiToApprove);
   
   const ethToApprove = getAmount("1");
-  await token2.approve(positionManagerAddr, ethToApprove);
+  await wethToken.approve(positionManagerAddr, ethToApprove);
   console.log('🚀 Approved tokens')
 
   // Add liquidity to the pool
   const params = {
-    token0: token1Addr,
-    token1: token2Addr,
+    token0: daiTokenAddr,
+    token1: wethTokenAddr,
     fee: FEE,
     tickLower: tickSpacing / 2n,
     tickUpper: tickSpacing * 2n,
@@ -99,7 +99,7 @@ const setupPool = async (
     amount0Min: daiToApprove / 2n,
     amount1Min: ethToApprove / 2n,
     recipient: owner.address,
-    deadline: ((await ethers.provider.getBlock('latest'))?.timestamp ?? 0) + 600,
+    deadline: (((await ethers.provider.getBlock('latest'))?.timestamp ?? 0) * 1000) + 600,
   }
   console.log(params)
   const addLiquidityTx = await positionManager.mint(params)
