@@ -44,10 +44,33 @@ const setupPool = async (
   const token1Addr = await token1.getAddress()
   const token2Addr = await token2.getAddress()
   const factoryAddr = await factory.getAddress()
+  const FEE = 3000
   
+  // Create & retrieve the pool
+  const pool = await factory.createPool(token1Addr, token2Addr, FEE)
+  const createPoolTx = await pool.wait(1);
+  const poolAddress = createPoolTx.logs[0].args[4]
+  const poolContract = await ethers.getContractAt(POOL_ABI, poolAddress)
+  const [
+    t0,
+    t1,
+    f,
+    tickSpacing,
+    liquidity,
+    slot0
+  ] = await Promise.all([
+    poolContract.token0(),
+    poolContract.token1(),
+    poolContract.fee(),
+    poolContract.tickSpacing(),
+    poolContract.liquidity(),
+    poolContract.slot0(),
+  ])
+  console.log('tickSpacing', tickSpacing, 'liquidity', liquidity)
+
   // Retrieve position manager for the pair WETH/DAI
   const PositionManager = await ethers.getContractFactory(POSITION_MANAGER_ABI, POSITION_MANAGER_BYTECODE)
-  const positionManager = await PositionManager.deploy(factoryAddr, token2Addr, token1Addr) as any
+  const positionManager = await PositionManager.deploy(factoryAddr, token2Addr, "0x0000000000000000000000000000000000000000") as any
   const positionManagerAddr = await positionManager.getAddress()
   console.log('🚀 Deployed PositionManager', positionManagerAddr)
   
@@ -67,17 +90,17 @@ const setupPool = async (
   const addLiquidityTx = await positionManager.mint({
     token0: token1Addr,
     token1: token2Addr,
-    fee: 3000,
-    tickLower: 3000,
-    tickUpper: 2000,
+    fee: FEE,
+    tickLower: 0n,
+    tickUpper: tickSpacing * 2n,
     amount0Desired: daiToApprove,
     amount1Desired: ethToApprove,
-    amount0Min: daiToApprove,
-    amount1Min: ethToApprove,
+    amount0Min: daiToApprove - 100n,
+    amount1Min: ethToApprove - 100n,
     recipient: owner.address,
-    deadline: new Date().getTime() + 1000 * 60 * 10,
+    deadline: ((await ethers.provider.getBlock('latest'))?.timestamp ?? 0) + 600,
   })
-  await addLiquidityTx.wait();
+  await addLiquidityTx.wait(1);
 
   console.log('🚀 Filled liquidity pool')
 }
