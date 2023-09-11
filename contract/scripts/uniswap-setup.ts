@@ -97,14 +97,14 @@ const setupPool = async (
   const positionManagerAddr = await positionManager.getAddress()
   
   // Wrap some ETH
-  await wethToken.deposit({ value: getAmount("1") })
+  const ethAmount = getAmount("0.1")
+  await wethToken.deposit({ value: ethAmount })
 
   // Authorize filling the pool
-  const daiToApprove = getAmount("10");
-  await daiToken.approve(positionManagerAddr, daiToApprove);
+  const daiAmount = getAmount("1000")
+  await daiToken.approve(positionManagerAddr, daiAmount);
   
-  const ethToApprove = getAmount("0.01");
-  await wethToken.approve(positionManagerAddr, ethToApprove);
+  await wethToken.approve(positionManagerAddr, ethAmount);
 
   const token0 = revert ? wethTokenAddr : daiTokenAddr
   const token1 = revert ? daiTokenAddr : wethTokenAddr
@@ -114,8 +114,8 @@ const setupPool = async (
   await ll.wait(1);
 
   // Add liquidity to the pool
-  const amount0Desired = revert ? ethToApprove : daiToApprove
-  const amount1Desired = revert ? daiToApprove : ethToApprove
+  const amount0Desired = revert ? ethAmount : daiAmount
+  const amount1Desired = revert ? daiAmount : ethAmount
   const params = {
     token0,
     token1,
