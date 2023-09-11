@@ -110,7 +110,7 @@ const setupPool = async (
 
   // Create the pool
   const ll = await positionManager.createAndInitializePoolIfNecessary(token0, token1, FEE, 4295128739);
-  await ll.wait(3);
+  await ll.wait(1);
 
   console.log('🚀 Created liquidity pool')
 

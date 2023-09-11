@@ -17,7 +17,19 @@ const config: HardhatUserConfig = {
       chainId: 5,
       accounts: [process.env.PRIVATE_KEY ?? '', process.env.PRIVATE_KEY_2 ?? ''],
       gasPrice: 3000000000,
-    }
+    },
+    optimisumMainnet: {
+      url: process.env.OPT_MAINNET_RPC_URL ?? '',
+      chainId: 10,
+      accounts: [process.env.PRIVATE_KEY ?? '', process.env.PRIVATE_KEY_2 ?? ''],
+      gasPrice: 3000000000,
+    },
+    optimisumTestnet: {
+      url: process.env.OPT_TESTNET_RPC_URL ?? '',
+      chainId: 420,
+      accounts: [process.env.PRIVATE_KEY ?? '', process.env.PRIVATE_KEY_2 ?? ''],
+      gasPrice: 3000000000,
+    },
   },
   etherscan: {
     apiKey: {

@@ -6,7 +6,9 @@
   "scripts": {
     "deploy:sepolia": "npx hardhat run scripts/deploy.ts --network sepolia",
     "abi": "npx hardhat run scripts/extract-abi.ts",
-    "test:goerli": "npx hardhat test --network sepolia",
+    "test:optTestnet": "npx hardhat test --network optimisumTestnet",
+    "test:optMainnet": "npx hardhat test --network optimisumMainnet",
+    "test:goerli": "npx hardhat test --network goerli",
     "test:sepolia": "npx hardhat test --network sepolia",
     "test:local": "npx hardhat test --network localhost"
   },

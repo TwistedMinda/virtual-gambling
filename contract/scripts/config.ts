@@ -20,4 +20,10 @@ export const config: Record<string, any> = {
     router: undefined, // Needs to be deployed manually
     quoter: undefined // Needs to be deployed manually
   },
+  optimisumTestnet: {
+    WETH: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
+    DAI: undefined, // Needs to be deployed & minted manually
+    router: undefined, // Needs to be deployed manually
+    quoter: undefined // Needs to be deployed manually
+  }
 }
