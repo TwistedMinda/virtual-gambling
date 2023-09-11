@@ -93,7 +93,7 @@ const setupPool = async (
     fee: FEE,
     tickLower: tickSpacing / 2n,
     tickUpper: tickSpacing * 2n,
-    liquidity: liquidity,
+    liquidity: 1000,
     amount0Desired: daiToApprove,
     amount1Desired: ethToApprove,
     amount0Min: daiToApprove / 2n,
