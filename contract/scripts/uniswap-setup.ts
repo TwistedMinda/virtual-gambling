@@ -40,7 +40,6 @@ const shouldRevertOrder = (tokenA: string, tokenB: string) => {
   if (tokenAAddress < tokenBAddress) {
     return false
   }
-  console.log('reverted!')
   return true
 }
 

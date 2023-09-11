@@ -6,7 +6,7 @@ export const extractABI = (name: string, destiation?: string) => {
     __dirname,
     `../artifacts/contracts/${name}.sol/${name}.json`
   );
-  console.log('dir')
+  
   const file = fs.readFileSync(dir, 'utf8');
   const json = JSON.parse(file);
   const abi = JSON.stringify(json.abi);

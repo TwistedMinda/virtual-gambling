@@ -99,7 +99,6 @@ describe("VirtualGambling", function () {
     }
     daiToken = cfg.DAI
     wethToken = cfg.WETH
-    console.log('dai', daiToken)
 
     swapperContract = await deploySwapperContract(cfg)
     contract = await deployContract(await swapperContract.getAddress())
