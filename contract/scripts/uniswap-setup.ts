@@ -64,7 +64,12 @@ export const getUniswapSetup = async (wethAddress: string) => {
   const daiToken = await DAI.deploy()
   const daiTokenAddr = await daiToken.getAddress()
 
-  const wethToken = await ethers.getContractAt(WETH9_ABI, wethAddress)
+  // Mocked WETH
+  const WETH = await ethers.getContractFactory('MockWETH')
+  const wethToken = await WETH.deploy()
+  const wethTokenAddr = await wethToken.getAddress()
+
+  //const wethToken = await ethers.getContractAt(WETH9_ABI, wethAddress)
 
   console.log('🚀 Uniswap booted\n- Deployed Factory, SwapRouter, Quoter & MockDAI\n- Retrieved WETH9')
   // Setup liquidiy pool
@@ -72,7 +77,7 @@ export const getUniswapSetup = async (wethAddress: string) => {
 
   return {
     DAI: daiTokenAddr,
-    WETH: wethAddress,
+    WETH: wethTokenAddr,
     router: swapRouterAddr,
     quoter: quoterAddr,
   }
@@ -104,6 +109,9 @@ const setupPool = async (
   await daiToken.approve(positionManagerAddr, daiAmount);
   
   await wethToken.approve(positionManagerAddr, ethAmount);
+
+  console.log('Balance DAI', (await daiToken.balanceOf(owner.address)).toString())
+  console.log('Balance WETH', (await wethToken.balanceOf(owner.address)).toString())
 
   const token0 = revert ? wethTokenAddr : daiTokenAddr
   const token1 = revert ? daiTokenAddr : wethTokenAddr
