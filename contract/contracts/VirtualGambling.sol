@@ -176,11 +176,6 @@ contract VirtualGambling {
     fights[fightId].fulfilled = true;
   }
 
-  function _enemyAddress(uint fightId) view private returns (address) {
-    Fight storage fight = fights[fightId];
-    return msg.sender == fight.creator ? fight.challenger : fight.creator;
-  }
-
   function _isFightFinished(uint fightId) view private returns (bool) {
     return (fights[fightId].startedAt + FIGHT_DURATION) < timer.getLatestTime();
   }

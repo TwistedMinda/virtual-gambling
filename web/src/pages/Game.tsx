@@ -12,20 +12,21 @@ const AvailableChunks = () => {
 		<div className="btn">
 			{isLoading
 				? 'Loading...'
-				: `Available chunks: ${availableChunks}`}
+				: `Pending fighter: ${availableChunks}`}
 		</div>
 	)
 }
 
-const Gamble = () => {
+const Buy = () => {
 	const { show } = usePopup(CREATE_BUCKET)
 	
 	return (
 		<div onClick={show} className="btn">
-			Go & Gamble
+			Buy
 		</div>
 	)
 }
+
 const Play = () => {
 	const { play, isLoading } = usePlay()
 
@@ -50,9 +51,8 @@ export default function GamePage() {
 		<div className="game-wrapper">
 			<div className="main-box">
 				<div className="col center">
-				<Play />
-				<Claim />
-					<Gamble />
+					<Play />
+					<Claim />
 				</div>
 
 				<AvailableChunks />
