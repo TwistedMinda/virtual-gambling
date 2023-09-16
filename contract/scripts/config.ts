@@ -7,7 +7,7 @@ export const config: Record<string, any> = {
     DAI: undefined, // Needs to be deployed & minted manually
     router: undefined, // Needs to be deployed manually
     quoter: undefined, // Needs to be deployed manually
-    chainlinkAggregator: '0x694AA1769357215DE4FAC081bf1f309aDC325306'
+    chainlinkAggregator: undefined // Needs to be deployed manually
   },
   fork_localhost: { // Local fork of the mainnet
     WETH: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',

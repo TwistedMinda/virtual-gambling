@@ -98,7 +98,7 @@ describe("VirtualGambling", function () {
     wethToken = cfg.WETH
 
     swapperContract = await deploySwapperContract(cfg)
-    contract = await deployContract(await swapperContract.getAddress())
+    contract = await deployContract(await swapperContract.getAddress(), cfg.chainlinkAggregator)
     
     // TODO: Transfer DAI from creator to challenger for a fair fight
   })
