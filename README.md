@@ -20,10 +20,10 @@ contract VirtualGambling {
   function startFighting() public;
 
   // (virtually) Buy ETH during a fight
-  function buy(uint fightId, uint amount) public;
+  function buy(uint fightId, uint daiAmount) public;
 
   // (virtually) Sell ETH during a fight
-  function sell(uint fightId, uint amount) public;
+  function sell(uint fightId, uint ethAmount) public;
 
   // Get current winner in given fight
   function getCurrentWinner(uint fightId, uint ethPrice) view public returns (address);
