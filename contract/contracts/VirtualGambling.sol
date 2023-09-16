@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 import "./Swapper.sol";
+import "./Timer.sol";
 
 contract VirtualGambling {
   /**
@@ -54,11 +55,13 @@ contract VirtualGambling {
    */
   uint id;
   Swapper swapper;
+  Timer timer;
   address pendingFighter = address(0);
   mapping(uint => Fight) fights;
   
-  constructor(address swapperAddress) {
+  constructor(address swapperAddress, address timerAddress) {
     swapper = Swapper(swapperAddress);
+    timer = Timer(timerAddress);
   }
 
   // Start to fight
@@ -175,7 +178,7 @@ contract VirtualGambling {
   }
 
   function _isFightFinished(uint fightId) view private returns (bool) {
-    return (fights[fightId].startedAt + FIGHT_DURATION) < block.timestamp;
+    return (fights[fightId].startedAt + FIGHT_DURATION) < timer.getLatestTime();
   }
 
   function _createFightWith(address challenger) private {
@@ -184,7 +187,7 @@ contract VirtualGambling {
     fights[id].challenger = challenger;
     fights[id].daiBalance[msg.sender] = STARTER_PACK;
     fights[id].daiBalance[challenger] = STARTER_PACK;
-    fights[id].startedAt = block.timestamp;
+    fights[id].startedAt = timer.getLatestTime();
     emit FightCreated(id, msg.sender, challenger);
     ++id;
   }

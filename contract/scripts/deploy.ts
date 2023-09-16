@@ -8,7 +8,7 @@ async function main() {
 
   const swapper = await deploySwapperContract(cfg)
   const swapperAddress = await swapper.getAddress()
-  await deployContract(swapperAddress)
+  await deployContract(swapperAddress, cfg.chainlinkAggregator)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
