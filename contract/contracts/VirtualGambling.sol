@@ -8,261 +8,149 @@ contract VirtualGambling {
   /**
    * Constants 
    */
-  uint constant MAX_POSITION_DURATION = 1 days;
-  uint constant LOSER_FEE_PERCENTAGE = 1;
-  uint constant WINNER_FEE_PERCENTAGE = 50;
   uint constant CHUNK_SIZE = 0.01 ether;
+  uint constant FIGHT_DURATION = 1 hours;
+  uint constant STARTER_PACK = 10;
 
   /**
    * Errors 
    */
-  error InsufficientDeposit(uint required, uint provided);
-  error DepositNotChunkCompatible(uint chunk_size, uint provided);
-  error NotEnoughProviders(uint current, uint required);
-  error PositionAlreadyClosed(uint positionId);
-  error PositionNotYetOutdated(uint positionId);
-  error NotEnoughWithdrawableLiquidity(uint available, uint required);
+  error NotEnoughWithdrawableLiquidity(uint, uint);
   
   /**
    * Events 
    */
-  event DepositedLiquidity(address, uint amount);
-  event WithdrawnLiquidity(address, uint amount);
-  event PositionOpen(address, uint positionId, uint startValue);
-  event PositionClosed(address, uint positionId, uint endValue);
+  event FightCreated(uint id, address creator, address challenger);
+  event FightPending(address fighter);
 
   /**
-   * Structs 
+   * Structs
    */
-  struct Position {
+  struct Fight {
     uint id;
-    uint amount;
-    uint lockedEther;
-    uint nbChunks;
-    uint endValue;
-    address owner;
-    address provider;
-    uint date;
-    bool open;
+    address creator;
+    address challenger;
+    mapping (address => uint) daiBalance;
+    mapping (address => uint) ethBalance;
+    uint startedAt;
   }
 
-  struct AvailableProvider {
-    uint index;
-    uint chunks;
-    address addr;
-  }
-  
   /**
    * Storage 
    */
-  uint totalAvailableChunks = 0;
-  uint id = 0;
-  mapping (uint => Position) public positions;
-  mapping (address => uint[]) public userPositions;
-
+  uint id;
   Swapper swapper;
-  address[] availableProviders;
-  mapping (address => AvailableProvider) userAvailableProvider;
-
+  address pendingFighter = address(0);
+  mapping(uint => Fight) fights;
+  
   constructor(address swapperAddress) {
     swapper = Swapper(swapperAddress);
   }
 
-  /**
-   * Liquidity provider methods
-   */
-
-  // Provide liquidity for the gamblers
-  function depositLiquidity() payable public
-    _isChunkCompatible(msg.value) {
-    // Add available chunks
-    uint count = msg.value / CHUNK_SIZE;
-    _incrementChunks(msg.sender, count);
-    emit DepositedLiquidity(msg.sender, msg.value);
-  }
-
-  // Retrieve liquidity from the contract
-  function withdrawLiquidity(uint nbChunks) public {
-    uint availableChunks = userAvailableProvider[msg.sender].chunks;
-    if (availableChunks < nbChunks) {
-      revert NotEnoughWithdrawableLiquidity(availableChunks, nbChunks);
-    }
-    _decrementChunks(msg.sender, nbChunks);
-    uint amount = nbChunks * CHUNK_SIZE;
-    payable(msg.sender).transfer(amount);
-    emit WithdrawnLiquidity(msg.sender, amount);
-  }
-
-  /**
-   * Virtual Gambler methods
-   */
-  
-  // Open a position
-  function openPosition() public {
-    uint NB_CHUNKS = 1;
-    address provider = _findAvailableProvider();
-    _decrementChunks(provider, NB_CHUNKS);
-    uint amount = NB_CHUNKS * _getEtherPrice(true, false);
+  // Start to fight
+  // ... you become the next pending fighter if no one is in the queue
+  // ... or you create a fight with the pending fighter
+  function startFighting() public {
+    uint amount = 1 ether;
     swapper.getDAIToken().transferFrom(msg.sender, address(this), amount);
-    userPositions[msg.sender].push(id);
-    positions[id] = Position({
-      id: id,
-      amount: amount,
-      date: block.timestamp,
-      owner: msg.sender,
-      provider: provider,
-      lockedEther: CHUNK_SIZE,
-      nbChunks: NB_CHUNKS,
-      endValue: 0,
-      open: true
-    });
-    emit PositionOpen(msg.sender, id, amount);
-    ++id;
-  }
-
-  /**
-   * Shared methods
-   */
-
-  // Close position
-  function closePosition(uint positionId) public _requireOpenPosition(positionId) {
-    if (msg.sender == positions[positionId].provider) {
-      if (positions[positionId].date + MAX_POSITION_DURATION > block.timestamp) {
-        revert PositionNotYetOutdated(positionId);
-      }
-    }
-    uint currentValue = positions[positionId].nbChunks * _getEtherPrice(false, positionId > 0);
-    positions[positionId].open = false;
-    positions[positionId].endValue = currentValue;
-    // Calculate virtual USDC profits
-    if (currentValue > positions[positionId].amount) {
-      // Gambler successfully sold it for higher value
-      uint sellValue = _sellLockedETH(positionId);
-      // ... we share profits to both participants
-      _shareProfits(positionId, sellValue);
+    if (pendingFighter == address(0)) {
+      pendingFighter = msg.sender;
+      emit FightPending(msg.sender);
     } else {
-      // Gambler failed to sell it for higher value
-      // ... has to pay a USDC fee to the provider
-      _sendFeeToProvider(positionId);
-      // Unlock provider's ETH
-      _incrementChunks(positions[positionId].provider, 1);
+      _createFightWith(pendingFighter);
+      pendingFighter = address(0);
     }
-    emit PositionClosed(msg.sender, positionId, positions[positionId].endValue);
   }
 
-  /**
-   * Getters
-   */
-  function getChunksCount() public view returns(uint count) {
-    return totalAvailableChunks;
+  // (virtually) Buy ETH during a fight
+  function buy(uint fightId, uint amount) public {
+    if (_checkFightStatus(fightId)) {
+      return;
+    }
+
+    uint buyable = fights[fightId].daiBalance[msg.sender];
+    require(amount <= buyable, "Not enough to buy");
+    uint price = swapper.getEtherPrice();
+    // Decrement DAI balance
+    fights[fightId].daiBalance[msg.sender] -= amount;
+    // Calculate new ETH balance
+    fights[fightId].ethBalance[msg.sender] += amount * price;
+  }
+
+  // (virtually) Sell ETH during a fight
+  function sell(uint fightId, uint amount) public {
+    if (_checkFightStatus(fightId)) {
+      return;
+    }
+
+    uint sellable = fights[fightId].ethBalance[msg.sender];
+    require(amount <= sellable, "Not enough to sell");
+    uint price = swapper.getEtherPrice();
+    // Calculate DAI profits
+    fights[fightId].daiBalance[msg.sender] += amount * price;
+    // Decrement ETH balance
+    fights[fightId].ethBalance[msg.sender] -= amount;
+  }
+
+  // Get current winner in given fight
+  function getCurrentWinner(uint fightId, uint ethPrice) view public returns (address) {
+    address creator = fights[fightId].creator;
+    address challenger = fights[fightId].challenger;
+    return _getPlayerBalance(fightId, creator, ethPrice) > _getPlayerBalance(fightId, challenger, ethPrice)
+      ? creator
+      : challenger;
+  }
+
+  // Claim the rewards
+  function claimRewards(uint fightId) public {
+    require(_isFightFinished(fightId), "Fight isn't finished yet");
+    _payWinner(fightId);
   }
 
   /**
    * Helpers
    */
 
-  // Add available chunks
-  function _incrementChunks(address provider, uint chunks) private {
-    uint current = userAvailableProvider[provider].chunks;
-    if (current == 0) {
-      availableProviders.push(provider);
-      // Save index of the new provider
-      userAvailableProvider[provider].index = availableProviders.length - 1;
+  // Check fight status before trading
+  function _checkFightStatus(uint fightId) private returns (bool) {
+    Fight storage fight = fights[fightId];
+    require(fight.startedAt > 0, "Fight hasn't started");
+    if (_isFightFinished(fightId)) {
+      // Fight is over
+      // ...both can trigger the final calculation
+      _payWinner(fightId);
+      return false;
     }
-    // Increment chunks
-    userAvailableProvider[provider].chunks += chunks;
-    totalAvailableChunks += chunks;
+    return true;
   }
   
-
-  // Remove available chunks
-  function _decrementChunks(address provider, uint chunks) private {
-    uint current = userAvailableProvider[provider].chunks;
-    if (current == 1) {
-      // No more available chunks, remove from list
-      removeProviderAtIndex(userAvailableProvider[provider].index);
-    }
-    // Decrement available chunks
-    userAvailableProvider[provider].chunks -= chunks;
-    totalAvailableChunks -= chunks;
+  // Get player balance in given fight
+  function _getPlayerBalance(uint fightId, address player, uint ethPrice) view private returns (uint) {
+    return (fights[fightId].ethBalance[player] * ethPrice) + fights[fightId].daiBalance[player];
   }
 
-  // Remove provider from available providers
-  function removeProviderAtIndex(uint index) private {
-    availableProviders[index] = availableProviders[availableProviders.length - 1];
-    userAvailableProvider[availableProviders[index]].index = index;
-    availableProviders.pop();
-  }
-
-  // Find available chunks
-  function _findAvailableProvider() view private returns (address) {
-    if (availableProviders.length == 0) {
-      revert NotEnoughProviders(availableProviders.length, 1);
-    }
-    return availableProviders[availableProviders.length - 1];
-  }
-
-  // Calculate off-chain price
-  function _getEtherPrice(bool start, bool win) private returns (uint) {
+  // Pay winner
+  function _payWinner(uint fightId) private {
     uint price = swapper.getEtherPrice();
-    if (start) {
-      return price;
-    }
-    if (win) {
-      return price + (price / 2);
-    }
-    return price - (price / 2);
+    swapper.getDAIToken().transfer(getCurrentWinner(fightId, price), 2 ether);
   }
 
-  // Sell locked ETH
-  function _sellLockedETH(uint positionId) private returns (uint) {
-    uint amount = positions[positionId].lockedEther;
-    swapper.wrapEther{value: amount}();
-    TransferHelper.safeApprove(address(swapper.getWETHToken()), address(swapper), amount);
-    return swapper.swapEtherToDAI(positions[positionId].lockedEther);
-   }
-
-  // Share USDC profits
-  function _shareProfits(uint positionId, uint sellValue) private {
-    // Provider gets its profits
-    uint providerFee = sellValue * (WINNER_FEE_PERCENTAGE / 100);
-    swapper.getDAIToken().transfer(positions[positionId].provider, providerFee);
-    // Gambler gets the initially deposited amount + profits (- provider fee)
-    swapper.getDAIToken().transfer(positions[positionId].owner, positions[positionId].amount + sellValue - providerFee);
- }
-
-  // Send USDC fee to provider
-  function _sendFeeToProvider(uint positionId) private {
-    // Provider get its profits
-    uint fee = positions[positionId].amount * LOSER_FEE_PERCENTAGE / 100;
-    swapper.getDAIToken().transfer(positions[positionId].provider, fee);
-    // Gambler gets the initially deposited amount (- fee)
-    swapper.getDAIToken().transfer(positions[positionId].owner, positions[positionId].amount - fee);
+  function _enemyAddress(uint fightId) view private returns (address) {
+    Fight storage fight = fights[fightId];
+    return msg.sender == fight.creator ? fight.challenger : fight.creator;
   }
 
-  /**
-   * Modifiers
-   */
-
-  modifier _isChunkCompatible(uint amount) {
-    if (amount % CHUNK_SIZE != 0) {
-      revert DepositNotChunkCompatible(CHUNK_SIZE, amount);
-    }
-    _;
+  function _isFightFinished(uint fightId) view private returns (bool) {
+    return (fights[fightId].startedAt + FIGHT_DURATION) < block.timestamp;
   }
 
-  modifier _requireOpenPosition(uint positionId) {
-    if (!positions[positionId].open) {
-      revert PositionAlreadyClosed(positionId);
-    }
-    _;
+  function _createFightWith(address challenger) private {
+    fights[id].id = id;
+    fights[id].creator = msg.sender;
+    fights[id].challenger = challenger;
+    fights[id].daiBalance[msg.sender] = STARTER_PACK;
+    fights[id].daiBalance[challenger] = STARTER_PACK;
+    emit FightCreated(id, msg.sender, challenger);
+    ++id;
   }
-
-  modifier _requireOutdatedPosition(uint positionId) {
-    if (positions[positionId].date + MAX_POSITION_DURATION > block.timestamp) {
-      revert PositionNotYetOutdated(positionId);
-    }
-    _;
-  }
-
 }

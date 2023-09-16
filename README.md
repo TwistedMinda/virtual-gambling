@@ -2,37 +2,34 @@
 
 Come for a Virtual Gambling party at [https://web3-virtual-gambling.vercel.app](https://web3-virtual-gambling.vercel.app)
 
-- Liquidity providers:
-  - Deposit ETH by chunks (Withdraw at any time)
-  - Wait that the gamblers sell your ETH for a guarenteed higher price than currently
+- Deposit 1 DAI & wait for a matching fighter
+- Both fighters start with 1000 vDAI (virtual DAI)
+- At anytime, user can virtually buy or sell the vDAI at real ETH price
+- At the end of the hour, the one ending with most value wins the 2 DAI at stake
 
-- Gamblers
-  - Open a (virtual) position at chunk price (eg. 1 ETH worth of DAI)
-  - Close the (virtual) position before the maximum duration
-    - If the position is losing, you give 1% of your DAI to the providers
-    - If the position is winning, you share 50% of the DAI profits with the providers
-
-*POSITION MAX DURATION*: 1 day
-
-*POSITION CHUNK SIZE*: 1 ETH
+*FIGHT DURATION*: 1 hour
 
 ## Contract
 
 ```solidity
 contract VirtualGambling {
 
-  // Providers: Deposit liquidity
-  function depositLiquidity() payable public;
+  // Start to fight
+  // ... you become the next pending fighter if no one is in the queue
+  // ... or you create a fight with the pending fighter
+  function startFighting() public;
 
-  // Providers: Withdraw liquidity
-  function withdrawLiquidity(uint amount) public;
+  // (virtually) Buy ETH during a fight
+  function buy(uint fightId, uint amount) public;
 
-  // Gamblers: Open a position
-  function openPosition() public;
+  // (virtually) Sell ETH during a fight
+  function sell(uint fightId, uint amount) public;
 
-  // Both: Close position
-  // ... providers can only close when period is over
-  function closePosition(uint positionId) public _requireOpenPosition(positionId);
+  // Get current winner in given fight
+  function getCurrentWinner(uint fightId, uint ethPrice) view public returns (address);
+
+  // Claim the rewards
+  function claimRewards(uint fightId) public;
 
 }
 

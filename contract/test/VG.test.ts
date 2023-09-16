@@ -114,18 +114,35 @@ describe("VirtualGambling", function () {
     const gamblerBalance = await getBalanceForToken(daiToken, await gambler.address)
     console.log('> Gambler has ', gamblerBalance, 'DAI')
   })
-  
-  it("deposit ETH", async function () {
-    const [_, liquidityProvider] = await ethers.getSigners()
 
-    const depositAmount = getAmount("0.02")
+  const lossPositionId = 0
+  const allowedDAI = getAmount("1")
+  
+  it("create fight (deposit DAI)", async function () {
+    const [gambler] = await ethers.getSigners()
+    
+    await approveToken(daiToken, await contract.getAddress(), allowedDAI)
     await expectFinish(
-      contract.connect(liquidityProvider).depositLiquidity({ value: depositAmount }),
-      (res) => res.to.emit(contract, "DepositedLiquidity").withArgs(liquidityProvider.address, depositAmount)
+      contract.connect(gambler).startFighting(),
+      (res) => res.to.emit(contract, "FightPending").withArgs(gambler.address)
     )
   })
-
-  it("withdraw some ETH", async function () {
+  
+  it("join existing fight (deposit DAI)", async function () {
+    const [gambler] = await ethers.getSigners()
+    
+    await approveToken(daiToken, await contract.getAddress(), allowedDAI)
+    await expectFinish(
+      contract.connect(gambler).startFighting(),
+      (res) => res.to.emit(contract, "FightCreated").withArgs(lossPositionId, gambler.address, (x: number) => {
+        console.log('> Starting a fight with: ', x)
+        return true
+      })
+    )
+  })
+  
+  /*
+  it("claim earned ETH", async function () {
     const [_, liquidityProvider] = await ethers.getSigners()
 
     const chunksToWithdraw = 1
@@ -138,82 +155,6 @@ describe("VirtualGambling", function () {
       )
     }
   })
+  */
 
-  const lossPositionId = 0
-  const allowedDAI = getAmount("2000") // More than current Chunk price
-  
-  it("(loss) open/close position", async function () {
-    const [gambler] = await ethers.getSigners()
-    
-    await approveToken(daiToken, await contract.getAddress(), allowedDAI)
-    await expectFinish(
-      contract.connect(gambler).openPosition(),
-      (res) => res.to.emit(contract, "PositionOpen").withArgs(gambler.address, lossPositionId, (x: number) => {
-        // console.log('> Position opened at: ', displayEther(x))
-        return true
-      })
-    )
-
-    await expectFinish(
-      contract.connect(gambler).closePosition(lossPositionId),
-      (res) => res.to.emit(contract, "PositionClosed").withArgs(gambler.address, lossPositionId, (x: number) => {
-        // console.log('> Position closed at: ', displayEther(x))
-        return true
-      })
-    )
-  })
-
-  const winPositionId = 1
-  
-  it("(win) open/close position", async function () {
-    const [gambler] = await ethers.getSigners()
-    
-    await approveToken(daiToken, await contract.getAddress(), allowedDAI)
-    await expectFinish(
-      contract.connect(gambler).openPosition(),
-      (res) => res.to.emit(contract, "PositionOpen").withArgs(gambler.address, winPositionId, (x: number) => {
-        // console.log('> Position opened at: ', displayEther(x))
-        return true
-      })
-    )
-
-    await expectFinish(
-      contract.connect(gambler).closePosition(winPositionId),
-      (res) => res.to.emit(contract, "PositionClosed").withArgs(gambler.address, winPositionId, (x: number) => {
-        // console.log('> Position closed at: ', displayEther(x))
-        return true
-      })
-    )
-  })
-  
-  /**
-   * Negative tests
-   */
-
-  it("can't close twice", async function () {
-    const [gambler] = await ethers.getSigners()
-    
-    await expectError(
-      contract.connect(gambler).closePosition(0),
-      "PositionAlreadyClosed"
-    )
-  })
-
-  it("can't withdraw twice", async function () {
-    const [_, liquidityProvider] = await ethers.getSigners()
-    
-    await expectError(
-      contract.connect(liquidityProvider).withdrawLiquidity(1),
-      "NotEnoughWithdrawableLiquidity"
-    )
-  })
-
-  it("Not enough providers", async function () {
-    const [gambler] = await ethers.getSigners()
-    
-    await expectError(
-      contract.connect(gambler).openPosition(),
-      "NotEnoughProviders"
-    )
-  })
 })
