@@ -51,11 +51,15 @@ contract VirtualGambling {
   }
 
   /**
+   * External Tools 
+   */
+  Swapper private swapper;
+  Timer private timer;
+
+  /**
    * Storage 
    */
   uint id;
-  Swapper swapper;
-  Timer timer;
   address pendingFighter = address(0);
   mapping(uint => Fight) fights;
   
