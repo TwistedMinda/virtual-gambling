@@ -44,23 +44,20 @@ const getFormattedBalance = async (address: string) =>
   displayEther(await getBalance(address))
 
 const log = async () => {
-  const [gambler, liquidityProvider] = await ethers.getSigners()
+  const [creator, challenger] = await ethers.getSigners()
   const contractAddr = await contract.getAddress()
   console.table({
-    Gambler: [
-      await getFormattedBalance(gambler.address),
-      await getBalanceForToken(daiToken, gambler.address),
-      await contract.liquidityProviders(gambler.address)
+    Creator: [
+      await getFormattedBalance(creator.address),
+      await getBalanceForToken(daiToken, creator.address),
     ],
-    LiquidityProvider: [
-      await getFormattedBalance(liquidityProvider.address),
-      await getBalanceForToken(daiToken, liquidityProvider.address),
-      await contract.liquidityProviders(liquidityProvider.address)
+    Challenger: [
+      await getFormattedBalance(challenger.address),
+      await getBalanceForToken(daiToken, challenger.address),
     ],
     Contract: [
       await getFormattedBalance(contractAddr),
       await getBalanceForToken(daiToken, contractAddr),
-      await contract.liquidityProviders(contractAddr)
     ]
   })
 }
@@ -102,6 +99,8 @@ describe("VirtualGambling", function () {
 
     swapperContract = await deploySwapperContract(cfg)
     contract = await deployContract(await swapperContract.getAddress())
+    
+    // TODO: Transfer DAI from creator to challenger for a fair fight
   })
 
   it("fund DAI", async function () {
@@ -115,7 +114,7 @@ describe("VirtualGambling", function () {
     console.log('> Gambler has ', gamblerBalance, 'DAI')
   })
 
-  const lossPositionId = 0
+  const fightId = 0
   const allowedDAI = getAmount("1")
   
   it("create fight (deposit DAI)", async function () {
@@ -134,13 +133,36 @@ describe("VirtualGambling", function () {
     await approveToken(daiToken, await contract.getAddress(), allowedDAI)
     await expectFinish(
       contract.connect(gambler).startFighting(),
-      (res) => res.to.emit(contract, "FightCreated").withArgs(lossPositionId, gambler.address, (x: number) => {
+      (res) => res.to.emit(contract, "FightCreated").withArgs(fightId, gambler.address, (x: number) => {
         console.log('> Starting a fight with: ', x)
         return true
       })
     )
+    await log()
   })
   
+  it("buy ETH", async function () {
+    const [gambler] = await ethers.getSigners()
+    
+    await expectFinish(
+      contract.connect(gambler).buy(fightId, getAmount("1000")),
+      (res) => res.to.emit(contract, "BoughtAt").withArgs(fightId, gambler.address, (x: number) => {
+        console.log('> Bought for: ', x)
+        return true
+      }, () => true)
+    )
+    await log()
+  })
+  
+  it("cannot sell more ETH than balance", async function () {
+    const [gambler] = await ethers.getSigners()
+    
+    await expectError(
+      contract.connect(gambler).sell(fightId, getAmount("1")),
+      "NotEnoughToSell"
+    )
+  })
+
   /*
   it("claim earned ETH", async function () {
     const [_, liquidityProvider] = await ethers.getSigners()
@@ -154,6 +176,15 @@ describe("VirtualGambling", function () {
         res.to.emit(contract, "WithdrawnLiquidity").withArgs(liquidityProvider.address, chunksToWithdraw)
       )
     }
+  })
+
+  it("Not enough providers", async function () {
+    const [gambler] = await ethers.getSigners()
+    
+    await expectError(
+      contract.connect(gambler).openPosition(),
+      "NotEnoughProviders"
+    )
   })
   */
 

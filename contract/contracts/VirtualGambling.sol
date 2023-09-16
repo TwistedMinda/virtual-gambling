@@ -10,18 +10,32 @@ contract VirtualGambling {
    */
   uint constant CHUNK_SIZE = 0.01 ether;
   uint constant FIGHT_DURATION = 1 hours;
-  uint constant STARTER_PACK = 10;
+  uint constant STARTER_PACK = 1000 ether;
 
   /**
    * Errors 
    */
-  error NotEnoughWithdrawableLiquidity(uint, uint);
+  error NotEnoughToBuy(uint, uint);
+  error NotEnoughToSell(uint, uint);
   
   /**
    * Events 
    */
   event FightCreated(uint id, address creator, address challenger);
+  event FightEnded(uint id, address creator, address challenger);
   event FightPending(address fighter);
+  event BoughtAt(
+    uint fightId, 
+    address buyer, 
+    uint ethReward,
+    uint daiCost
+  );
+  event SoldAt(
+    uint fightId, 
+    address seller, 
+    uint daiReward, 
+    uint ethCost
+  );
 
   /**
    * Structs
@@ -33,6 +47,7 @@ contract VirtualGambling {
     mapping (address => uint) daiBalance;
     mapping (address => uint) ethBalance;
     uint startedAt;
+    bool fulfilled;
   }
 
   /**
@@ -64,32 +79,50 @@ contract VirtualGambling {
 
   // (virtually) Buy ETH during a fight
   function buy(uint fightId, uint daiAmount) public {
-    if (_checkFightStatus(fightId)) {
+    if (_checkFinish(fightId)) {
       return;
     }
 
     uint buyable = fights[fightId].daiBalance[msg.sender];
-    require(daiAmount <= buyable, "Not enough to buy");
+    if (daiAmount > buyable) {
+      revert NotEnoughToBuy(buyable, daiAmount);
+    }
     uint price = swapper.getEtherPrice();
     // Decrement DAI balance
     fights[fightId].daiBalance[msg.sender] -= daiAmount;
     // Calculate new ETH balance
-    fights[fightId].ethBalance[msg.sender] += daiAmount * price;
+    uint reward = daiAmount / price;
+    fights[fightId].ethBalance[msg.sender] += reward;
+    emit BoughtAt(
+      fightId, 
+      msg.sender,
+      reward,
+      daiAmount
+    );
   }
 
   // (virtually) Sell ETH during a fight
   function sell(uint fightId, uint ethAmount) public {
-    if (_checkFightStatus(fightId)) {
+    if (_checkFinish(fightId)) {
       return;
     }
 
     uint sellable = fights[fightId].ethBalance[msg.sender];
-    require(ethAmount <= sellable, "Not enough to sell");
+    if (ethAmount > sellable) {
+      revert NotEnoughToSell(sellable, ethAmount);
+    }
     uint price = swapper.getEtherPrice();
     // Calculate DAI profits
-    fights[fightId].daiBalance[msg.sender] += ethAmount * price;
+    uint reward = ethAmount * price;
+    fights[fightId].daiBalance[msg.sender] += reward;
     // Decrement ETH balance
     fights[fightId].ethBalance[msg.sender] -= ethAmount;
+    emit SoldAt(
+      fightId, 
+      msg.sender,
+      reward,
+      ethAmount
+    );
   }
 
   // Get current winner in given fight
@@ -104,6 +137,7 @@ contract VirtualGambling {
   // Claim the rewards
   function claimRewards(uint fightId) public {
     require(_isFightFinished(fightId), "Fight isn't finished yet");
+    require(!fights[fightId].fulfilled, "Rewards already claimed");
     _payWinner(fightId);
   }
 
@@ -112,16 +146,16 @@ contract VirtualGambling {
    */
 
   // Check fight status before trading
-  function _checkFightStatus(uint fightId) private returns (bool) {
+  function _checkFinish(uint fightId) private returns (bool) {
     Fight storage fight = fights[fightId];
     require(fight.startedAt > 0, "Fight hasn't started");
     if (_isFightFinished(fightId)) {
       // Fight is over
       // ...both can trigger the final calculation
       _payWinner(fightId);
-      return false;
+      return true;
     }
-    return true;
+    return false;
   }
   
   // Get player balance in given fight
@@ -150,6 +184,7 @@ contract VirtualGambling {
     fights[id].challenger = challenger;
     fights[id].daiBalance[msg.sender] = STARTER_PACK;
     fights[id].daiBalance[challenger] = STARTER_PACK;
+    fights[id].startedAt = block.timestamp;
     emit FightCreated(id, msg.sender, challenger);
     ++id;
   }
