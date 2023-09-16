@@ -8,7 +8,6 @@ contract VirtualGambling {
   /**
    * Constants 
    */
-  uint constant CHUNK_SIZE = 0.01 ether;
   uint constant FIGHT_DURATION = 1 hours;
   uint constant STARTER_PACK = 1000 ether;
 
@@ -167,6 +166,7 @@ contract VirtualGambling {
   function _payWinner(uint fightId) private {
     uint price = swapper.getEtherPrice();
     swapper.getDAIToken().transfer(getCurrentWinner(fightId, price), 2 ether);
+    fights[fightId].fulfilled = true;
   }
 
   function _enemyAddress(uint fightId) view private returns (address) {
