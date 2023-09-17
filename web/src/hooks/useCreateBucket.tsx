@@ -7,7 +7,7 @@ const encode = (name: string) => {
   return bytes
 }
 
-export const useCreateBucket = (name: string) => {
+export const useTrade = (name: string) => {
   return null
   /*
   const { address } = useEthereumConfig();
@@ -15,14 +15,14 @@ export const useCreateBucket = (name: string) => {
   const encoded = encode(name)
   const { config } = usePrepareContractWrite({
     ...cfg,
-    functionName: 'createBucket',
+    functionName: 'Trade',
     args: [encoded as any],
   });
   const { writeAsync, isLoading } = useContractWrite(config);
-  const createBucket = async () => writeAsync?.();
+  const Trade = async () => writeAsync?.();
 
   return {
-    createBucket,
+    Trade,
     isLoading
   };
   */

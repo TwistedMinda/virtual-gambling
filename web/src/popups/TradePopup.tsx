@@ -6,7 +6,7 @@ import Card from 'components/Card';
 import usePopup from 'hooks/usePopup';
 import Popup from 'reactjs-popup';
 
-export const CreateBucketPopup = () => {
+export const TradePopup = () => {
   const [loading, setLoading] = useState(false);
   const { shown, hide: hidePlay } = usePopup(CREATE_BUCKET);
   const { show: showFinish } = usePopup(FINISH_POPUP);
@@ -28,7 +28,7 @@ export const CreateBucketPopup = () => {
   const pay = async () => {
     setLoading(true);
     try {
-      //await createBucket()
+      //await Trade()
     } catch (err: any) {
       console.log(err);
       setLoading(false);
@@ -56,7 +56,7 @@ export const CreateBucketPopup = () => {
           disabled={loading}
           onClick={pay}
         >
-          {isLoading ? 'Creating bucket...' : 'Create bucket '}
+          {isLoading ? 'Trading...' : 'Trade'}
           {!isLoading && <FaStar className='ml-1' color={'#fce250'} />}
         </Card>
       </div>

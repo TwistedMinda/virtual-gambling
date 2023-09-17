@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { useEffect } from 'react';
 import { FinishPopup } from 'popups/FinishPopup';
-import { CreateBucketPopup } from 'popups/CreateBucketPopup';
+import { TradePopup } from 'popups/TradePopup';
 
 export default function Root() {
   useEffect(() => {
@@ -11,7 +11,7 @@ export default function Root() {
   return (
     <>
       <Outlet />
-      <CreateBucketPopup />
+      <TradePopup />
       <FinishPopup />
     </>
   );
