@@ -4,25 +4,25 @@ import { useEthPrice } from 'hooks/useEthPrice';
 
 import ETH_HISTORY from '../eth.json'
 
+type PriceFeed = {
+	date: Date,
+	price: number,
+}
+
+type Series = {
+	label: string,
+	data: PriceFeed[]
+}
+
 const ethHistory = ETH_HISTORY.map((item) => ({
 	date: new Date(item.timestamp),
-	stars: item.close,
+	price: item.close,
 }))
 
 export const Graph = () => {
 
 	const { price } = useEthPrice()
 
-	type DailyStars = {
-		date: Date,
-		stars: number,
-	}
-	
-	type Series = {
-		label: string,
-		data: DailyStars[]
-	}
-	
 	const data: Series[] = [
 		{
 			label: '',
@@ -31,16 +31,16 @@ export const Graph = () => {
 	]
 
 	const primaryAxis = useMemo(
-		(): AxisOptions<DailyStars> => ({
+		(): AxisOptions<PriceFeed> => ({
 			getValue: datum => datum.date,
 		}),
 		[]
 	)
 
 	const secondaryAxes = useMemo(
-		(): AxisOptions<DailyStars>[] => [
+		(): AxisOptions<PriceFeed>[] => [
 			{
-				getValue: datum => datum.stars,
+				getValue: datum => datum.price,
 				elementType: 'line',
 				formatters: {
 					tooltip: (datum: any) => `${datum}€`
