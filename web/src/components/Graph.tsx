@@ -52,7 +52,7 @@ export const Graph = () => {
 
 
   return (
-		<div className='w-96'>
+		<div className=''>
 			<div className='text-red-500 text-center flex-1 rounded bg-gray-100 p-2 opacity-80'>
 				Game ID: 22408
 			</div>

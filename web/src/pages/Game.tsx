@@ -52,11 +52,9 @@ export default function GamePage() {
 	console.log(params.id)
 
 	return (
-		<div className="game-wrapper">
-			<div className="col center">
-				<Play />
-				<Claim />
-			</div>
+		<div className="flex flex-col flex-1">
+			<Play />
+			<Claim />
 
 			<AvailableChunks />
 
