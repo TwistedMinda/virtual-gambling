@@ -1,4 +1,3 @@
-import Footer from 'components/Footer';
 import { useClaim } from 'hooks/usePlay';
 import { Graph } from 'components/Graph';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -93,8 +92,6 @@ export default function GamePage() {
 			<div className='mt-4 opacity-20 self-center'>
 				<Claim />
 			</div>
-
-			<Footer />
 		</div>
   );
 }

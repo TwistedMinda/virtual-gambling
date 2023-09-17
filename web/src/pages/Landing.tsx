@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import './Landing.scss'
 import { usePlay } from 'hooks/usePlay'
 import { useInfo } from 'hooks/useInfo'
+import Footer from 'components/Footer'
 
 const AvailableChunks = () => {
 	const { availableChunks, isLoading } = useInfo()
@@ -44,6 +45,7 @@ export const Landing = () => {
         <Play />
         <AvailableChunks />
 
+        <Footer />
       </div>
     </div>
   )
