@@ -2,8 +2,8 @@ import { createBrowserRouter } from 'react-router-dom';
 
 import Root from './pages/Root';
 import Error from './pages/Error';
-import Game from 'pages/Game';
-import Bucket from 'pages/Bucket';
+import Game from './pages/Game';
+import { Landing } from 'pages/Landing';
 
 export const router = createBrowserRouter([
   {
@@ -13,12 +13,12 @@ export const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <Game />
+        element: <Landing />
       },
       {
-        path: '/:id',
-        element: <Bucket />
-      }
+        path: "/:id",
+        element: <Game />,
+      },
     ]
-  }
+  },
 ]);

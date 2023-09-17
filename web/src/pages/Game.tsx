@@ -5,6 +5,7 @@ import { CREATE_BUCKET } from 'stores/popup-store';
 import { useInfo } from 'hooks/useInfo';
 import { useClaim, usePlay } from 'hooks/usePlay';
 import { Graph } from 'components/Graph';
+import { useParams } from 'react-router-dom';
 
 const AvailableChunks = () => {
 	const { availableChunks, isLoading } = useInfo()
@@ -48,8 +49,10 @@ const Claim = () => {
 }
 
 export default function GamePage() {
+	const params = useParams()
+	console.log(params.id)
 
-  return (
+	return (
 		<div className="game-wrapper">
 			<div className="main-box">
 				<div className="col center">
