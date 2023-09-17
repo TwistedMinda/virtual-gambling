@@ -62,14 +62,26 @@ export const Graph = () => {
 
 
   return (
-    <div className='bg-white w-96 h-96 rounded'>
-      <Chart
-        options={{
-          data,
-          primaryAxis,
-          secondaryAxes,
-        }}
-      />
-    </div>
+		<div className='w-96'>
+			<div className='bg-white h-96 rounded'>
+				<Chart
+					options={{
+						data,
+						primaryAxis,
+						secondaryAxes,
+					}}
+				/>
+			</div>
+			<div className='flex flex-row justify-center'>
+
+				<div className='text-red-500 text-center flex-1 rounded bg-gray-100 p-2 opacity-80'>
+					BUY
+				</div>
+
+				<div className='text-red-500 text-center flex-1 rounded bg-gray-100 p-2 opacity-80'>
+					SELL
+				</div>
+			</div>
+		</div>
   )
 }
