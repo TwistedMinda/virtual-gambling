@@ -1,7 +1,7 @@
 import Footer from 'components/Footer';
 import { useClaim } from 'hooks/usePlay';
 import { Graph } from 'components/Graph';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { HTMLProps } from 'react';
 import { CREATE_BUCKET } from 'stores/popup-store';
 import usePopup from 'hooks/usePopup';
@@ -54,12 +54,17 @@ export default function GamePage() {
 	const params = useParams()
 	console.log(params.id)
 	const { price } = useEthPrice()
+	const navigate = useNavigate()
+	const goBack = () => navigate('/')
 
 	return (
 		<div className="flex flex-col flex-1">
 			
 			<div className='text-red-500 text-center flex-1 bg-gray-100 p-2 opacity-80'>
-				Game ID: 22408
+				<div>Game ID: 22408</div>
+				<div onClick={goBack} className='text-black absolute top-2 left-4 cursor-pointer'>
+					{'< Home'}
+				</div>
 			</div>
 
 			<Graph />
