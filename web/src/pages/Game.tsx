@@ -1,5 +1,4 @@
 import Footer from 'components/Footer';
-import './Game.scss';
 import usePopup from 'hooks/usePopup';
 import { CREATE_BUCKET } from 'stores/popup-store';
 import { useInfo } from 'hooks/useInfo';
@@ -54,18 +53,16 @@ export default function GamePage() {
 
 	return (
 		<div className="game-wrapper">
-			<div className="main-box">
-				<div className="col center">
-					<Play />
-					<Claim />
-				</div>
-
-				<AvailableChunks />
-
-				<Graph />
-
-				<Footer />
+			<div className="col center">
+				<Play />
+				<Claim />
 			</div>
+
+			<AvailableChunks />
+
+			<Graph />
+
+			<Footer />
 		</div>
   );
 }

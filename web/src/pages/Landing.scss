@@ -1,6 +1,6 @@
 @import 'styles/vars';
 
-.game-wrapper {
+.landing-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -35,11 +35,4 @@
     width: 100%;
     padding: 20px;
   }
-}
-
-.subtitle {
-  color: $gray;
-  font-weight: bold;
-  text-align: center;
-  line-height: 1.3rem;
 }
