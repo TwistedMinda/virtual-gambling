@@ -1,5 +1,29 @@
 import { useNavigate } from 'react-router-dom'
 import './Landing.scss'
+import { usePlay } from 'hooks/usePlay'
+import { useInfo } from 'hooks/useInfo'
+
+const AvailableChunks = () => {
+	const { availableChunks, isLoading } = useInfo()
+
+	return (
+		<div className="btn">
+			{isLoading
+				? 'Loading...'
+				: `Pending fighter: ${availableChunks}`}
+		</div>
+	)
+}
+
+const Play = () => {
+	const { play, isLoading } = usePlay()
+
+	return (
+		<div onClick={isLoading ? undefined : play} className="btn">
+			{isLoading ? 'Setting up...' : 'Fight now'}
+		</div>
+	)
+}
 
 export const Landing = () => {
   const navigate = useNavigate()
@@ -16,6 +40,10 @@ export const Landing = () => {
         >
           Check out example fight
         </div>
+
+        <Play />
+        <AvailableChunks />
+
       </div>
     </div>
   )

@@ -1,6 +1,5 @@
 import { AxisOptions, Chart } from 'react-charts'
 import { useMemo } from 'react';
-import { useEthPrice } from 'hooks/useEthPrice';
 
 import ETH_HISTORY from '../eth.json'
 
@@ -19,9 +18,8 @@ const ethHistory = ETH_HISTORY.map((item) => ({
 	price: item.close,
 }))
 
-export const Graph = () => {
 
-	const { price } = useEthPrice()
+export const Graph = () => {
 
 	const data: Series[] = [
 		{
@@ -52,36 +50,14 @@ export const Graph = () => {
 
 
   return (
-		<div className=''>
-			<div className='text-red-500 text-center flex-1 rounded bg-gray-100 p-2 opacity-80'>
-				Game ID: 22408
-			</div>
-			
-			<div className='bg-white h-96 rounded'>
-				<Chart
-					options={{
-						data,
-						primaryAxis,
-						secondaryAxes,
-					}}
-				/>
-			</div>
-
-			<div className='text-red-500 text-center flex-1 rounded'>
-				Virtual balance: {price}€<br />
-				ETH amount: {0} ETH<br />
-				Total Value: {price}€
-			</div>
-
-			<div className='flex flex-row justify-center'>
-				<div className='text-red-500 text-center flex-1 rounded bg-gray-100 p-2 opacity-80'>
-					BUY
-				</div>
-
-				<div className='text-red-500 text-center flex-1 rounded bg-gray-100 p-2 opacity-80'>
-					SELL
-				</div>
-			</div>
+		<div className='bg-white h-96'>
+			<Chart
+				options={{
+					data,
+					primaryAxis,
+					secondaryAxes,
+				}}
+			/>
 		</div>
   )
 }

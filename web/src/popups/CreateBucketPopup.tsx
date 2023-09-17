@@ -37,6 +37,12 @@ export const CreateBucketPopup = () => {
 
   return (
     <Popup open={shown} onClose={hidePlay}>
+      <div className='text-center font-bold mb-8'>
+        Buy amount
+      </div>
+      <div className='text-center font-bold mb-8'>
+        Available: 0.2 ETH
+      </div>
       <div className="slider flex flex-col items-center">
         <input
          type='text'
