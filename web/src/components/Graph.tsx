@@ -2,6 +2,13 @@ import { AxisOptions, Chart } from 'react-charts'
 import { useMemo } from 'react';
 import { useEthPrice } from 'hooks/useEthPrice';
 
+import ETH_HISTORY from '../eth.json'
+
+const ethHistory = ETH_HISTORY.map((item) => ({
+	date: new Date(item.timestamp),
+	stars: item.close,
+}))
+
 export const Graph = () => {
 
 	const { price } = useEthPrice()
@@ -19,24 +26,7 @@ export const Graph = () => {
 	const data: Series[] = [
 		{
 			label: '',
-			data: [
-				{
-					date: new Date('09/15/2023'),
-					stars: 10,
-				},
-				{
-					date: new Date('09/16/2023'),
-					stars: 200,
-				},
-				{
-					date: new Date('09/17/2023'),
-					stars: 240,
-				},
-				{
-					date: new Date('09/18/2023'),
-					stars: 140,
-				}
-			]
+			data: ethHistory
 		}
 	]
 
